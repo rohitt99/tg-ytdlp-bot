@@ -29,6 +29,7 @@ Test free bot - https://t.me/tgytdlp_bot
 ```sh
 sudo apt update
 sudo apt install git
+sudo apt install mediainfo
 ```
 
 ```sh
