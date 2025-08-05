@@ -157,11 +157,11 @@ def split_video_2(dir, video_name, video_path, video_size, max_size, duration):
             logger.warning(f"Video will be split into {rounds} parts, which may be excessive")
 
         for x in range(rounds):
-            start_time = float(x * n)
-            end_time = float((x * n) + n)
+            start_time = x * n
+            end_time = (x * n) + n
 
             # Ensure end_time doesn't exceed duration
-            end_time = min(end_time, float(duration))
+            end_time = min(end_time, duration)
 
             cap_name = video_name + " - Part " + str(x + 1)
             target_name = os.path.join(dir, cap_name + ".mp4")
@@ -197,7 +197,8 @@ def split_video_2(dir, video_name, video_path, video_size, max_size, duration):
         # Return what we have so far
         split_vid_dict = {
             "video": caption_lst,
-            "path": path_lst
+            "path": path_lst,
+            "duration": video_duration
         }
         return split_vid_dict
 
@@ -284,60 +285,44 @@ def get_duration_thumb(message, dir_path, video_path, thumb_name):
     thumb_hash = hashlib.md5(thumb_name.encode()).hexdigest()[:10]
     thumb_dir = os.path.abspath(os.path.join(dir_path, thumb_hash + ".jpg"))
 
-    # Get FFmpeg path using the common function (we'll use ffmpeg instead of ffprobe)
-    ffmpeg_path = get_ffmpeg_path()
-    if not ffmpeg_path:
-        logger.error("ffmpeg not found in PATH or project directory.")
-        send_to_all(message, "❌ FFmpeg not found. Please install FFmpeg.")
-        return None
+    # FFPROBE COMMAND to GET Video Dimensions and Duration
+    ffprobe_size_command = [
+        "ffprobe",
+        "-v", "error",
+        "-select_streams", "v:0",
+        "-show_entries", "stream=width,height",
+        "-of", "csv=s=x:p=0",
+        video_path
+    ]
     
-    # Check if video file exists first (without quotes)
-    if not os.path.exists(video_path):
-        logger.error(f"Video file does not exist: {video_path}")
-        send_to_all(message, f"❌ Video file not found: {os.path.basename(video_path)}")
-        return None
-    
-    # Use absolute paths without quotes for better compatibility
-    abs_video_path = os.path.abspath(video_path)
-    abs_thumb_dir = os.path.abspath(thumb_dir)
-    
-    # For Windows, convert to forward slashes for FFmpeg
-    if os.name == 'nt':
-        abs_video_path = abs_video_path.replace('\\', '/')
-        abs_thumb_dir = abs_thumb_dir.replace('\\', '/')
-    
-    # Use ffmpeg to get video info instead of ffprobe
-    ffmpeg_info_command = [
-        ffmpeg_path,
-        "-i", abs_video_path,
-        "-f", "null", "-"
+    ffprobe_duration_command = [
+        "ffprobe",
+        "-v", "error",
+        "-select_streams", "v:0",
+        "-show_entries", "format=duration",
+        "-of", "default=noprint_wrappers=1:nokey=1",
+        video_path
     ]
 
     try:
+        # First check if video file exists
+        if not os.path.exists(video_path):
+            logger.error(f"Video file does not exist: {video_path}")
+            send_to_all(message, f"❌ Video file not found: {os.path.basename(video_path)}")
+            return None
 
-        # Get video info using ffmpeg
-        logger.info(f"Running ffmpeg info command for thumbnail: {' '.join(ffmpeg_info_command)}")
-        logger.info(f"Original video path: {video_path}")
-        logger.info(f"Absolute video path: {abs_video_path}")
-        result = subprocess.run(ffmpeg_info_command, capture_output=True, text=True, timeout=int(30), encoding='utf-8', errors='replace')
-        output = result.stderr  # ffmpeg outputs info to stderr
-        logger.info(f"FFmpeg info return code: {result.returncode}")
-        logger.info(f"FFmpeg info output: {output[:300]}...")  # Log first 300 chars
-        
-        # Extract video dimensions
-        orig_w, orig_h = 1920, 1080  # Default dimensions
-        stream_match = re.search(r'Stream.*Video.* (\d+)x(\d+)', output)
-        if stream_match:
-            orig_w, orig_h = map(int, stream_match.groups())
+        # Get video dimensions
+        size_result = subprocess.check_output(ffprobe_size_command, stderr=subprocess.STDOUT, universal_newlines=True).strip()
+        # if 'x' in size_result:
+            # orig_w, orig_h = map(int, size_result.split('x'))
+        if 'x' in size_result:
+            dimensions = size_result.split('x')
+            orig_w = int(str(dimensions[0]).strip().split()[0]) if dimensions[0] else 1920
+            orig_h = int(str(dimensions[1]).strip().split()[0]) if dimensions[1] else 1080            
         else:
+            # Fallback to default horizontal orientation
+            orig_w, orig_h = 1920, 1080
             logger.warning(f"Could not determine video dimensions, using default: {orig_w}x{orig_h}")
-        
-        # Extract duration
-        duration = 0
-        duration_match = re.search(r'Duration: (\d{2}):(\d{2}):(\d{2})\.(\d{2})', output)
-        if duration_match:
-            hours, minutes, seconds, centiseconds = map(int, duration_match.groups())
-            duration = int(hours * 3600 + minutes * 60 + seconds + centiseconds / 100)
         
         # Determine optimal thumbnail size based on video aspect ratio
         aspect_ratio = orig_w / orig_h
@@ -363,22 +348,29 @@ def get_duration_thumb(message, dir_path, video_path, thumb_name):
         
         # FFMPEG Command to create thumbnail with calculated dimensions
         ffmpeg_command = [
-            ffmpeg_path,
+            "ffmpeg",
             "-y",
-            "-i", abs_video_path,
+            "-i", video_path,
             "-ss", "2",         # Seek to 2 Seconds
             "-vframes", "1",    # Capture 1 Frame
             "-vf", f"scale={thumb_w}:{thumb_h}",  # Scale to exact thumbnail size
-            abs_thumb_dir
+            thumb_dir
         ]
 
         # Run ffmpeg command to create thumbnail
-        logger.info(f"Running ffmpeg thumbnail command: {' '.join(ffmpeg_command)}")
-        ffmpeg_result = subprocess.run(ffmpeg_command, check=True, capture_output=True, text=True, encoding='utf-8', errors='replace')
+        ffmpeg_result = subprocess.run(ffmpeg_command, check=True, capture_output=True, text=True)
         if ffmpeg_result.returncode != 0:
             logger.error(f"Error creating thumbnail: {ffmpeg_result.stderr}")
-        else:
-            logger.info("Thumbnail created successfully")
+
+        # Run ffprobe command to get duration
+        result = subprocess.check_output(ffprobe_duration_command, stderr=subprocess.STDOUT, universal_newlines=True)
+
+        try:
+            # duration = int(float(result))
+            duration = int(float(str(result).strip().split()[0])) if result else 0
+        except (ValueError, TypeError) as e:
+            logger.error(f"Error parsing video duration: {e}, result was: {result}")
+            duration = 0
 
         # Verify thumbnail was created
         if not os.path.exists(thumb_dir):
@@ -498,7 +490,9 @@ def ffmpeg_extract_subclip(video_path, start_time, end_time, targetname):
         logger.info(f"Original target path: {targetname}")
         logger.info(f"Normalized target path: {normalized_targetname}")
         
-        subprocess.run(cmd, check=True, capture_output=True, encoding='utf-8', errors='replace')
+        result = subprocess.run(cmd, check=True, capture_output=True, encoding='utf-8', errors='replace')
+        logger.info(f"FFmpeg extract completed successfully for {targetname}")
+        logger.info(f"Output file size: {os.path.getsize(targetname) if os.path.exists(targetname) else 'File not found'}")
         return True
     except Exception as e:
         logger.error(f"Error extracting subclip: {e}")
@@ -510,104 +504,23 @@ def ffmpeg_extract_subclip(video_path, start_time, end_time, targetname):
 
 def get_video_info_ffprobe(video_path):
     import json
-    
-    # Get FFmpeg path using the common function
-    ffmpeg_path = get_ffmpeg_path()
-    if not ffmpeg_path:
-        return 0, 0, 0
-    
-    # Check if video file exists first (without quotes)
-    if not os.path.exists(video_path):
-        logger.error(f"Video file not found: {video_path}")
-        video_dir = os.path.dirname(video_path)
-        if video_dir and os.path.exists(video_dir):
-            logger.info(f"Directory contents of {video_dir}: {os.listdir(video_dir)}")
-            # Try to find the file with different encodings
-            try:
-                import glob
-                video_name = os.path.basename(video_path)
-                video_ext = os.path.splitext(video_name)[1]
-                video_base = os.path.splitext(video_name)[0]
-                # Look for files with similar names
-                pattern = os.path.join(video_dir, f"*{video_ext}")
-                matching_files = glob.glob(pattern)
-                logger.info(f"Files with extension {video_ext} in directory: {matching_files}")
-                if matching_files:
-                    # Use the first matching file
-                    video_path = matching_files[0]
-                    logger.info(f"Using alternative video path: {video_path}")
-                else:
-                    # Try to find any video file in the directory
-                    video_patterns = ["*.mp4", "*.mkv", "*.webm", "*.avi"]
-                    for pattern in video_patterns:
-                        video_files = glob.glob(os.path.join(video_dir, pattern))
-                        if video_files:
-                            video_path = video_files[0]
-                            logger.info(f"Found video file with pattern {pattern}: {video_path}")
-                            break
-                    else:
-                        logger.error("No video files found in directory")
-                        return 0, 0, 0
-            except Exception as e:
-                logger.error(f"Error finding alternative video path: {e}")
-                return 0, 0, 0
-        else:
-            logger.info(f"Directory {video_dir} does not exist")
-            return 0, 0, 0
-    
-    # Now check if the video file exists after potential path correction
-    if not os.path.exists(video_path):
-        logger.error(f"Video file still not found after path correction: {video_path}")
-        return 0, 0, 0
-    
-    logger.info(f"Video file found and exists: {video_path}")
-    
-    # Use absolute paths without quotes for better compatibility
-    abs_video_path = os.path.abspath(video_path)
-    
-    # For Windows, convert to forward slashes for FFmpeg
-    if os.name == 'nt':
-        abs_video_path = abs_video_path.replace('\\', '/')
-    
     try:
-        # Use ffmpeg to get video info (ffmpeg can do what ffprobe does)
-        cmd = [ffmpeg_path, '-i', abs_video_path, '-f', 'null', '-']
-        
-        logger.info(f"Running ffmpeg info command: {' '.join(cmd)}")
-        logger.info(f"Original video path: {video_path}")
-        logger.info(f"Absolute video path: {abs_video_path}")
-        logger.info(f"Video path exists (original): {os.path.exists(video_path)}")
-        logger.info(f"Video path exists (absolute): {os.path.exists(abs_video_path)}")
-        
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=int(60), encoding='utf-8', errors='replace')
-        
-        logger.info(f"FFmpeg return code: {result.returncode}")
-        logger.info(f"FFmpeg stderr output: {result.stderr[:500]}...")  # Log first 500 chars
-        
-        # Parse the output to extract width, height, and duration
-        output = result.stderr  # ffmpeg outputs info to stderr
-        
-        # Extract duration
-        duration = 0
-        duration_match = re.search(r'Duration: (\d{2}):(\d{2}):(\d{2})\.(\d{2})', output)
-        if duration_match:
-            hours, minutes, seconds, centiseconds = map(int, duration_match.groups())
-            duration = int(hours * 3600 + minutes * 60 + seconds + centiseconds / 100)
-        
-        # Extract video stream info
-        width, height = 0, 0
-        stream_match = re.search(r'Stream.*Video.* (\d+)x(\d+)', output)
-        if stream_match:
-            width, height = map(int, stream_match.groups())
-        
-        return width, height, duration
-    except subprocess.TimeoutExpired:
-        logger.error('ffmpeg timeout - video file may be corrupted or too large')
-    except FileNotFoundError:
-        logger.error('ffmpeg not found. Please install FFmpeg.')
+        result = subprocess.run([
+            'ffprobe', '-v', 'error',
+            '-select_streams', 'v:0',
+            '-show_entries', 'stream=width,height',
+            '-show_entries', 'format=duration',
+            '-of', 'json', video_path
+        ], capture_output=True, text=True)
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            width = data['streams'][0]['width'] if data['streams'] else 0
+            height = data['streams'][0]['height'] if data['streams'] else 0
+            duration = float(data['format']['duration']) if 'format' in data and 'duration' in data['format'] else 0
+            return width, height, duration
     except Exception as e:
-        logger.error(f'ffmpeg error: {e}')
-    return 0, 0, 0
+        logger.error(f'ffprobe error: {e}')
+
 
 
 def embed_subs_to_video(video_path, user_id, tg_update_callback=None, app=None, message=None, original_video_path=None):
