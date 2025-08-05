@@ -198,7 +198,7 @@ def split_video_2(dir, video_name, video_path, video_size, max_size, duration):
         split_vid_dict = {
             "video": caption_lst,
             "path": path_lst,
-            "duration": video_duration
+            "duration": duration
         }
         return split_vid_dict
 
@@ -312,7 +312,11 @@ def get_duration_thumb(message, dir_path, video_path, thumb_name):
             return None
 
         # Get video dimensions
-        size_result = subprocess.check_output(ffprobe_size_command, stderr=subprocess.STDOUT, universal_newlines=True).strip()
+        try:
+            size_result = subprocess.check_output(ffprobe_size_command, stderr=subprocess.STDOUT, universal_newlines=True, encoding='utf-8', errors='replace').strip()
+        except UnicodeDecodeError:
+            # Fallback with error handling
+            size_result = subprocess.check_output(ffprobe_size_command, stderr=subprocess.STDOUT, encoding='utf-8', errors='replace').decode('utf-8', errors='replace').strip()
         # if 'x' in size_result:
             # orig_w, orig_h = map(int, size_result.split('x'))
         if 'x' in size_result:
@@ -363,7 +367,11 @@ def get_duration_thumb(message, dir_path, video_path, thumb_name):
             logger.error(f"Error creating thumbnail: {ffmpeg_result.stderr}")
 
         # Run ffprobe command to get duration
-        result = subprocess.check_output(ffprobe_duration_command, stderr=subprocess.STDOUT, universal_newlines=True)
+        try:
+            result = subprocess.check_output(ffprobe_duration_command, stderr=subprocess.STDOUT, universal_newlines=True, encoding='utf-8', errors='replace')
+        except UnicodeDecodeError:
+            # Fallback with error handling
+            result = subprocess.check_output(ffprobe_duration_command, stderr=subprocess.STDOUT, encoding='utf-8', errors='replace').decode('utf-8', errors='replace')
 
         try:
             # duration = int(float(result))
@@ -405,7 +413,7 @@ def create_default_thumbnail(thumb_path, width=480, height=480):
             "-frames:v", "1",
             thumb_path
         ]
-        subprocess.run(ffmpeg_cmd, check=True, capture_output=True, encoding='utf-8', errors='replace')
+        subprocess.run(ffmpeg_cmd, check=True, capture_output=True, text=True, encoding='utf-8', errors='replace')
         logger.info(f"Created default {width}x{height} thumbnail at {thumb_path}")
     except Exception as e:
         logger.error(f"Failed to create default thumbnail: {e}")
@@ -490,7 +498,7 @@ def ffmpeg_extract_subclip(video_path, start_time, end_time, targetname):
         logger.info(f"Original target path: {targetname}")
         logger.info(f"Normalized target path: {normalized_targetname}")
         
-        result = subprocess.run(cmd, check=True, capture_output=True, encoding='utf-8', errors='replace')
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8', errors='replace')
         logger.info(f"FFmpeg extract completed successfully for {targetname}")
         logger.info(f"Output file size: {os.path.getsize(targetname) if os.path.exists(targetname) else 'File not found'}")
         return True
@@ -511,7 +519,7 @@ def get_video_info_ffprobe(video_path):
             '-show_entries', 'stream=width,height',
             '-show_entries', 'format=duration',
             '-of', 'json', video_path
-        ], capture_output=True, text=True)
+        ], capture_output=True, text=True, encoding='utf-8', errors='replace')
         if result.returncode == 0:
             data = json.loads(result.stdout)
             width = data['streams'][0]['width'] if data['streams'] else 0
@@ -520,6 +528,7 @@ def get_video_info_ffprobe(video_path):
             return width, height, duration
     except Exception as e:
         logger.error(f'ffprobe error: {e}')
+        return 0, 0, 0
 
 
 
