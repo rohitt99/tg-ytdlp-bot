@@ -243,7 +243,12 @@ def down_and_up(app, message, url, playlist_name, video_count, video_start_with,
 
         # Get info_dict to estimate the size of the selected quality
         try:
-            ydl_opts = {'quiet': True}
+            ydl_opts = {
+                'quiet': True,
+                'extractor_args': {
+                    'youtubetab': ['skip=authcheck']
+                }
+            }
             user_cookie_path = os.path.join("users", str(user_id), "cookie.txt")
             if os.path.exists(user_cookie_path):
                 ydl_opts['cookiefile'] = user_cookie_path
@@ -383,7 +388,8 @@ def down_and_up(app, message, url, playlist_name, video_count, video_start_with,
                 }                  
                 ],                
                 'extractor_args': {
-                   'generic': ['impersonate=chrome']
+                   'generic': ['impersonate=chrome'],
+                   'youtubetab': ['skip=authcheck']
                 },
                 'referer': url,
                 'geo_bypass': True,
