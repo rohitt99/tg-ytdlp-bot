@@ -984,8 +984,8 @@ def down_and_up(app, message, url, playlist_name, video_count, video_start_with,
                                         logger.info(f"Calling embed_subs_to_video with path: {after_rename_abs_path}")
                                         logger.info(f"File exists check: {os.path.exists(after_rename_abs_path)}")
                                         logger.info(f"Original video path for subtitle search: {original_video_path}")
-                                        # Use original path for subtitle search, but renamed path for video processing
-                                        embed_result = embed_subs_to_video(after_rename_abs_path, user_id, tg_update_callback, app=app, message=message, original_video_path=original_video_path)
+                                        # Use renamed path for video processing
+                                        embed_result = embed_subs_to_video(after_rename_abs_path, user_id, tg_update_callback, app=app, message=message)
                                         try:
                                             if embed_result:
                                                 app.edit_message_text(
