@@ -362,7 +362,7 @@ def get_duration_thumb(message, dir_path, video_path, thumb_name):
         ]
 
         # Run ffmpeg command to create thumbnail
-        ffmpeg_result = subprocess.run(ffmpeg_command, check=True, capture_output=True, text=True)
+        ffmpeg_result = subprocess.run(ffmpeg_command, check=True, capture_output=True, text=True, encoding='utf-8', errors='replace')
         if ffmpeg_result.returncode != 0:
             logger.error(f"Error creating thumbnail: {ffmpeg_result.stderr}")
 
