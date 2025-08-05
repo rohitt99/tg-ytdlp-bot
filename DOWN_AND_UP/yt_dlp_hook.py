@@ -16,7 +16,8 @@ def get_video_formats(url, user_id=None, playlist_start_index=1):
         'simulate': True,
         'playlist_items': str(playlist_start_index),    
         'extractor_args': {
-            'generic': ['impersonate=chrome']
+            'generic': ['impersonate=chrome'],
+            'youtubetab': ['skip=authcheck']
         },
         'referer': url,
         'geo_bypass': True,
