@@ -880,9 +880,11 @@ def down_and_up(app, message, url, playlist_name, video_count, video_start_with,
                                           f"{info_text}\n{full_bar}   100.0%\n__📤 Splitted part {p + 1} file uploaded__")
                     if p < len(caption_lst) - 1:
                         threading.Event().wait(2)
-                    os.remove(splited_thumb_dir)
+                    if os.path.exists(splited_thumb_dir):
+                        os.remove(splited_thumb_dir)
                     send_mediainfo_if_enabled(user_id, path_lst[p], message)
-                    os.remove(path_lst[p])
+                    if os.path.exists(path_lst[p]):
+                        os.remove(path_lst[p])
                 
                 # Save all parts of split video to cache after the loop is completed
                 if split_msg_ids and not is_playlist:
@@ -897,8 +899,10 @@ def down_and_up(app, message, url, playlist_name, video_count, video_start_with,
                         save_to_video_cache(url, quality_key, split_msg_ids, original_text=message.text or message.caption or "")
                     else:
                         logger.info(f"Split video with subtitles is not cached (found_type={found_type}, auto_mode={auto_mode})")
-                os.remove(thumb_dir)
-                os.remove(user_vid_path)
+                if os.path.exists(thumb_dir):
+                    os.remove(thumb_dir)
+                if os.path.exists(user_vid_path):
+                    os.remove(user_vid_path)
                 success_msg = f"**✅ Upload complete** - {video_count} files uploaded.\n{Config.CREDITS_MSG}"
                 safe_edit_message_text(user_id, proc_msg_id, success_msg)
                 send_to_logger(message, "Video upload completed with file splitting.")
@@ -1115,7 +1119,8 @@ def down_and_up(app, message, url, playlist_name, video_count, video_start_with,
                         send_mediainfo_if_enabled(user_id, after_rename_abs_path, message)
                         
                         # Clean up video file and thumbnail
-                        os.remove(after_rename_abs_path)
+                        if os.path.exists(after_rename_abs_path):
+                            os.remove(after_rename_abs_path)
                         if thumb_dir and os.path.exists(thumb_dir):
                             os.remove(thumb_dir)
                         threading.Event().wait(2)
