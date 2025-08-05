@@ -3,14 +3,23 @@ import os
 import subprocess
 from pyrogram import filters
 from CONFIG.config import Config
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyParameters
 
 from HELPERS.app_instance import get_app
 from HELPERS.filesystem_hlp import create_directory
-from HELPERS.logger import send_to_logger, logger
+from HELPERS.logger import send_to_logger, logger, send_to_all
 
 # Get app instance for decorators
 app = get_app()
+
+def is_user_in_channel(app, message):
+    """Check if user is member of the subscription channel"""
+    try:
+        user_id = message.chat.id
+        member = app.get_chat_member(Config.SUBSCRIBE_CHANNEL, user_id)
+        return member.status in ["member", "administrator", "creator"]
+    except Exception:
+        return False
 
 @app.on_message(filters.command("mediainfo") & filters.private)
 # @reply_with_keyboard
@@ -100,7 +109,8 @@ def send_mediainfo_if_enabled(user_id, file_path, message):
             msg_id = message.id if hasattr(message, "id") else message.get("message_id") or message.get("id")
 
             mediainfo_text = get_mediainfo_cli(file_path)
-            mediainfo_text = mediainfo_text.replace(Config.USERS_ROOT, "")
+            # Remove any absolute paths from mediainfo output for security
+            mediainfo_text = mediainfo_text.replace(os.path.abspath("users"), "users")
             mediainfo_path = os.path.splitext(file_path)[0] + "_mediainfo.txt"
 
             with open(mediainfo_path, "w", encoding="utf-8") as f:
