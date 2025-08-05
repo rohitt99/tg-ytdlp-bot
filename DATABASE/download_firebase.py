@@ -8,13 +8,19 @@ import json
 import os
 import sys
 from datetime import datetime
-from HELPERS.logger import logger
+
+# Добавляем родительскую директорию в путь для импорта ПЕРЕД импортом модулей
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
-    import sys
-    import os
-    # Добавляем родительскую директорию в путь для импорта
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from HELPERS.logger import logger
+except ImportError:
+    # Fallback logger если HELPERS недоступен
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+
+try:
     from CONFIG.config import Config
 except ImportError:
     print("❌ Не найден CONFIG/config.py или класс Config! Все параметры должны быть в CONFIG/config.py.")
