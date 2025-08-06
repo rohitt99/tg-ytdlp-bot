@@ -72,7 +72,7 @@ pip install --no-deps moviepy==1.0.3
 ---
 ### Installing ffmpeg (example for Ubuntu/Debian)
       
-   If you prefer local deployment rather that docker container you also need to install `ffmpeg`
+   you also need to install `ffmpeg`
    **ffmpeg** is essential since **yt-dlp** relies on it for merging streams (and in some cases for transcoding or extracting thumbnails). To install ffmpeg on a Debian-based system, run:
 
    ```sh
