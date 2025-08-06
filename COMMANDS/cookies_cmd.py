@@ -133,7 +133,7 @@ def browser_choice_callback(app, callback_query):
 
     # Build the command for cookie extraction: yt-dlp --cookies "cookie.txt" --cookies-from-browser <browser_option>
     cmd = f'yt-dlp --cookies "{cookie_file}" --cookies-from-browser {browser_option}'
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    result = subprocess.run(cmd, shell=True, capture_output=True, text=True, encoding='utf-8', errors='replace')
 
     if result.returncode != 0:
         if "You must provide at least one URL" in result.stderr:
@@ -282,7 +282,7 @@ def download_cookie(app, message):
     ]
     keyboard = InlineKeyboardMarkup(buttons)
     text = """
-🍪 **Download Cookie Files**
+🍪 <b>Download Cookie Files</b>
 
 Choose a service to download the cookie file.
 Cookie files will be saved as cookie.txt in your folder.
@@ -330,7 +330,7 @@ def download_and_save_cookie(app, callback_query, url, service):
             with open(file_path, "wb") as cf:
                 cf.write(response.content)
                 
-            send_to_user(callback_query.message, f"**✅ {service.capitalize()} cookie file downloaded and saved as cookie.txt in your folder.**")
+            send_to_user(callback_query.message, f"<b>✅ {service.capitalize()} cookie file downloaded and saved as cookie.txt in your folder.</b>")
             send_to_logger(callback_query.message, f"{service.capitalize()} cookie file downloaded for user {user_id}.")
         else:
             send_to_user(callback_query.message, f"❌ {service.capitalize()} Cookie URL is not available! (Status: {response.status_code})")
@@ -367,53 +367,15 @@ def save_as_cookie_file(app, message):
     final_cookie = "\n".join(processed_lines)
 
     if final_cookie:
-        send_to_all(message, "**✅ User provided a new cookie file.**")
+        send_to_all(message, "<b>✅ User provided a new cookie file.</b>")
         user_dir = os.path.join("users", user_id)
         create_directory(user_dir)
         cookie_filename = os.path.basename(Config.COOKIE_FILE_PATH)
         file_path = os.path.join(user_dir, cookie_filename)
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(final_cookie)
-        send_to_user(message, f"**✅ Cookie successfully updated:**\n`{final_cookie}`")
+        send_to_user(message, f"<b>✅ Cookie successfully updated:</b>\n<code>{final_cookie}</code>")
         send_to_logger(message, f"Cookie file updated for user {user_id}.")
     else:
-        send_to_user(message, "**❌ Not a valid cookie.**")
-        send_to_logger(message, f"Invalid cookie content provided by user {user_id}.")
-
-    user_id = str(message.chat.id)
-    content = message.text[len(Config.SAVE_AS_COOKIE_COMMAND):].strip()
-    new_cookie = ""
-
-    if content.startswith("```"):
-        lines = content.splitlines()
-        if lines[0].startswith("```"):
-            if lines[-1].strip() == "```":
-                lines = lines[1:-1]
-            else:
-                lines = lines[1:]
-            new_cookie = "\n".join(lines).strip()
-        else:
-            new_cookie = content
-    else:
-        new_cookie = content
-
-    processed_lines = []
-    for line in new_cookie.splitlines():
-        if "\t" not in line:
-            line = re.sub(r' {2,}', '\t', line)
-        processed_lines.append(line)
-    final_cookie = "\n".join(processed_lines)
-
-    if final_cookie:
-        send_to_all(message, "**✅ User provided a new cookie file.**")
-        user_dir = os.path.join("users", user_id)
-        create_directory(user_dir)
-        cookie_filename = os.path.basename(Config.COOKIE_FILE_PATH)
-        file_path = os.path.join(user_dir, cookie_filename)
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write(final_cookie)
-        send_to_user(message, f"**✅ Cookie successfully updated:**\n`{final_cookie}`")
-        send_to_logger(message, f"Cookie file updated for user {user_id}.")
-    else:
-        send_to_user(message, "**❌ Not a valid cookie.**")
+        send_to_user(message, "<b>❌ Not a valid cookie.</b>")
         send_to_logger(message, f"Invalid cookie content provided by user {user_id}.")
