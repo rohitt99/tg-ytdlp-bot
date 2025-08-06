@@ -18,23 +18,6 @@ Test free bot - https://t.me/tgytdlp_bot
 - Star and fork this repository. Then rename the file **_config.py** to **config.py**.
 - Add your configuration to the **config.py** file.
 
-#### Setting up `config.py` (example for Ubuntu/Debian)
-
-```sh
-sudo apt update
-sudo apt install git
-sudo apt install mediainfo
-```
-
-```sh
-git clone https://github.com/upekshaip/tg-ytdlp-bot.git
-cd tg-ytdlp-bot/TXT
-sudo mv _config.py config.py
-nano config.py
-```
-
-Edit your configuration before deployment. After your edits, proceed with the Docker build steps below.
-
 ---
 
 #### Get YouTube cookies
@@ -63,6 +46,7 @@ For local deployment you should use this commands:
 #### Install `git` and `python3` (example for Ubuntu/Debian)
 ```sh
 sudo apt update
+sudo apt install mediainfo
 sudo apt install git python3.10 python3-pip python3.10-venv
 ```
 #### Setting up `config.py`
