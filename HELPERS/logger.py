@@ -48,18 +48,18 @@ def send_to_logger(message, msg):
     msg_with_id = f"{message.chat.first_name} - {user_id}\n \n{msg}"
     # Print (user_id, "-", msg)
     safe_send_message(Config.LOGS_ID, msg_with_id,
-                     parse_mode=enums.ParseMode.MARKDOWN)
+                     parse_mode=enums.ParseMode.HTML)
 
 # Send Message to User Only
 
 def send_to_user(message, msg):
     user_id = message.chat.id
-    safe_send_message(user_id, msg, parse_mode=enums.ParseMode.MARKDOWN, reply_to_message_id=message.id)
+    safe_send_message(user_id, msg, parse_mode=enums.ParseMode.HTML, reply_to_message_id=message.id)
 
 # Send Message to All ...
 
 def send_to_all(message, msg):
     user_id = message.chat.id
     msg_with_id = f"{message.chat.first_name} - {user_id}\n \n{msg}"
-    safe_send_message(Config.LOGS_ID, msg_with_id, parse_mode=enums.ParseMode.MARKDOWN)
-    safe_send_message(user_id, msg, parse_mode=enums.ParseMode.MARKDOWN, reply_to_message_id=message.id)
+    safe_send_message(Config.LOGS_ID, msg_with_id, parse_mode=enums.ParseMode.HTML)
+    safe_send_message(user_id, msg, parse_mode=enums.ParseMode.HTML, reply_to_message_id=message.id)
