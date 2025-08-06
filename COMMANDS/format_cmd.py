@@ -46,7 +46,7 @@ def set_format(app, message):
         ])
         app.send_message(
             user_id,
-            "Select a format option or send a custom one using `/format <format_string>`:",
+            "Select a format option or send a custom one using <code>/format &lt;format_string&gt;</code>:",
             reply_markup=main_keyboard
         )
         send_to_logger(message, "Format menu sent.")
@@ -78,7 +78,7 @@ def format_option_callback(app, callback_query):
         ])
         app.send_message(
             user_id,
-            "To use a custom format, send the command in the following form:\n\n`/format bestvideo+bestaudio/best`\n\nReplace `bestvideo+bestaudio/best` with your desired format string.",
+            "To use a custom format, send the command in the following form:\n\n<code>/format bestvideo+bestaudio/best</code>\n\nReplace <code>bestvideo+bestaudio/best</code> with your desired format string.",
             reply_to_message_id=callback_query.message.id,
             reply_markup=keyboard
         )
@@ -123,7 +123,7 @@ def format_option_callback(app, callback_query):
             [InlineKeyboardButton("🎚 Custom (enter your own)", callback_data="format_option|custom")],
             [InlineKeyboardButton("🔚 close", callback_data="format_option|close")]
         ])
-        callback_query.edit_message_text("Select a format option or send a custom one using `/format <format_string>`:",
+        callback_query.edit_message_text("Select a format option or send a custom one using <code>/format &lt;format_string&gt;</code>:",
                                          reply_markup=main_keyboard)
         callback_query.answer()
         send_to_logger(callback_query.message, "Returned to main format menu.")
