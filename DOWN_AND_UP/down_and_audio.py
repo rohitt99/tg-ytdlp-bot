@@ -266,7 +266,7 @@ def down_and_audio(app, message, url, tags, quality_key=None, playlist_name=None
 
                 try:
                     safe_edit_message_text(user_id, proc_msg_id,
-                        f"{current_total_process}\n> __📥 Downloading audio using format: ba...__")
+                        f"{current_total_process}\n> <i>📥 Downloading audio using format: ba...</i>")
                 except Exception as e:
                     logger.error(f"Status update error: {e}")
                 
@@ -285,9 +285,9 @@ def down_and_audio(app, message, url, tags, quality_key=None, playlist_name=None
                 # Send full error message with instructions immediately
                 send_to_all(
                     message,
-                    "> Check [here](https://github.com/chelaxian/tg-ytdlp-bot/wiki/YT_DLP#supported-sites) if your site supported\n"
-                    "> You may need `cookie` for downloading this audio. First, clean your workspace via **/clean** command\n"
-                    "> For Youtube - get `cookie` via **/download_cookie** command. For any other supported site - send your own cookie ([guide1](https://t.me/c/2303231066/18)) ([guide2](https://t.me/c/2303231066/22)) and after that send your audio link again.\n"
+                    "<blockquote>Check <a href='https://github.com/chelaxian/tg-ytdlp-bot/wiki/YT_DLP#supported-sites'>here</a> if your site supported</blockquote>\n"
+                    "<blockquote>You may need <code>cookie</code> for downloading this audio. First, clean your workspace via <b>/clean</b> command</blockquote>\n"
+                    "<blockquote>For Youtube - get <code>cookie</code> via <b>/download_cookie</b> command. For any other supported site - send your own cookie (<a href='https://t.me/c/2303231066/18'>guide1</a>) (<a href='https://t.me/c/2303231066/22'>guide2</a>) and after that send your audio link again.</blockquote>\n"
                     f"────────────────\n❌ Error downloading: {error_text}"
                 )
                 return None
@@ -312,8 +312,8 @@ def down_and_audio(app, message, url, tags, quality_key=None, playlist_name=None
         for idx, current_index in enumerate(indices_to_download):
             current_index = current_index - video_start_with  # for numbering/display
             total_process = f"""
-**📶 Total Progress**
-> **Audio:** {idx + 1} / {len(indices_to_download)}
+<b>📶 Total Progress</b>
+<blockquote><b>Audio:</b> {idx + 1} / {len(indices_to_download)}</blockquote>
 """
 
             current_total_process = total_process
