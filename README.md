@@ -73,7 +73,7 @@ pip install --no-deps moviepy==1.0.3
 ### Installing ffmpeg (example for Ubuntu/Debian)
       
    you also need to install `ffmpeg`
-   **ffmpeg** is essential since **yt-dlp** relies on it for merging streams (and in some cases for transcoding or extracting thumbnails). To install ffmpeg on a Debian-based system, run:
+   **ffmpeg** is essential since **yt-dlp** relies on it for merging streams (and in some cases for transcoding or extracting thumbnails). Also ffmpeg is needed for embedding subtitles and for slpitting bigger that 2gb videos into parts. To install ffmpeg on a Debian-based system, run:
 
    ```sh
    sudo apt-get update
@@ -84,8 +84,13 @@ pip install --no-deps moviepy==1.0.3
    ```sh
    ffmpeg -version
    ```
+---
+### (Optional) Arabic and Asian fonts
 
-   If you need to support extra languages such as arabic, chinese, japanese, korean - you also need to install this language packs:
+<details>
+   <summary>spoiler</summary> 
+      
+If you need to support extra languages such as arabic, chinese, japanese, korean - you also need to install this language packs:
    ```sh
    sudo apt update
    sudo add-apt-repository universe
@@ -109,6 +114,7 @@ pip install --no-deps moviepy==1.0.3
    sudo fc-cache -fv
    fc-list | grep -i amiri
    ``` 
+</details>
 
 ---
 ### (Optional) Preparing `yt-dlp` for `/cookies_from_browser`
