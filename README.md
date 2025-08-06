@@ -106,9 +106,7 @@ pip install --no-deps moviepy==1.0.3
 python3 magic.py
 ```
 ---
-### (Optional) Installing ffmpeg (example for Ubuntu/Debian)
-<details>
-  <summary>spoiler</summary> 
+### Installing ffmpeg (example for Ubuntu/Debian)
       
    If you prefer local deployment rather that docker container you also need to install `ffmpeg`
    **ffmpeg** is essential since **yt-dlp** relies on it for merging streams (and in some cases for transcoding or extracting thumbnails). To install ffmpeg on a Debian-based system, run:
@@ -146,8 +144,7 @@ python3 magic.py
    ```sh
    sudo fc-cache -fv
    fc-list | grep -i amiri
-   ```
-</details> 
+   ``` 
 
 ---
 ### (Optional) Preparing `yt-dlp` for `/cookies_from_browser`
