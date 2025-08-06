@@ -133,7 +133,7 @@ def subs_page_callback(app, callback_query):
         status_text = f"{lang_info['flag']} Selected language: {lang_info['name']}{auto_text}"
     
     callback_query.edit_message_text(
-        f"**💬 Subtitle settings**\n\n{status_text}\n\nSelect subtitle language:",
+                    f"<b>💬 Subtitle settings</b>\n\n{status_text}\n\nSelect subtitle language:",
         reply_markup=get_language_keyboard(page, user_id=user_id)
     )
     callback_query.answer()
@@ -190,7 +190,7 @@ def subs_auto_callback(app, callback_query):
         
         # We update the message from the new menu
         callback_query.edit_message_text(
-            f"**💬 Subtitle settings**\n\n{status_text}\n\nSelect subtitle language:",
+            f"<b>💬 Subtitle settings</b>\n\n{status_text}\n\nSelect subtitle language:",
             reply_markup=get_language_keyboard(page=page, user_id=user_id)
         )
         
