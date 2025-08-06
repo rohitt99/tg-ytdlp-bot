@@ -144,7 +144,10 @@ If you need to support extra languages such as arabic, chinese, japanese, korean
 
 </details>
 
-Now yoy can start the bot
+---
+
+## Running Telegram bot
+Now yoy can start the bot via commands
 ```sh
 source venv/bin/activate
 python3 magic.py
