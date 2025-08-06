@@ -4,11 +4,11 @@ class MessagesConfig(object):
     #######################################################
     # Messages and errors
     #######################################################
-    CREDITS_MSG = "__Developed by__ @upekshaip"
-    TO_USE_MSG = "__To use this bot you need to subscribe to @upekshaip Telegram channel.__\nAfter you join the channel, **resend your video link again and I will download it for you** ❤️  "
+    CREDITS_MSG = "<i>Developed by</i> @upekshaip"
+    TO_USE_MSG = "<i>To use this bot you need to subscribe to @upekshaip Telegram channel.</i>\nAfter you join the channel, <b>resend your video link again and I will download it for you</b> ❤️  "
     MSG1 = "Hello "
     MSG2 = "This is the second message. which means my own message... 😁"
-    ERROR1 = "Did not found a url link. Please enter a url with **https://** or **http://**"
+    ERROR1 = "Did not found a url link. Please enter a url with <b>https://</b> or <b>http://</b>"
     INDEX_ERROR = "You did not give a valid information. Try again..."
     PLAYLIST_HELP_MSG = """
 📋 <b>How to download playlists:</b>
@@ -104,7 +104,7 @@ see <a href="https://raw.githubusercontent.com/yt-dlp/yt-dlp/refs/heads/master/s
 
 📊 <b>Information:</b>
 • <code>/usage</code> - View your download history
-• <code>/help</b> - Show this help message
+• <code>/help</code> - Show this help message
 
 <blockquote expandable>🇷🇺 <b>Бот для скачивания видео - Помощь</b>
 (нажми, чтобы развернуть 👇)
