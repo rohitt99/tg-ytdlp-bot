@@ -147,56 +147,11 @@ If you need to support extra languages such as arabic, chinese, japanese, korean
 ---
 
 ## Running Telegram bot
-Now yoy can start the bot via commands
+Now you can start the bot via commands:
 ```sh
 source venv/bin/activate
 python3 magic.py
 ```
----
-
-## New Commands and Features
-
-### /audio Command
-
-The **/audio** command downloads audio from a given video URL. It extracts the best available audio track, converts it to MP3, and sends the audio file to the user. After sending, the downloaded file is removed to prevent disk clutter.
-
-Usage example:
-```
-/audio https://youtu.be/dQw4w9WgXcQ?si=Vqh0HJVNn_99bhj4
-```
-
----
-
-### /format Command
-
-The **/format** command allows users to set a custom download format for their videos. Users can either supply a custom format string or choose from a preset menu.
-
-**Main Menu Options:**
-- ❓ Always Ask (menu + buttons)
-- **🎛 Others (144p - 4320p)** – opens a full resolution menu (see below)
-- 💻4k (best for PC/Mac Telegram)
-- 📱FullHD (best for mobile Telegram)
-- 📈bestvideo+bestaudio (MAX quality)
-- **🎚 Custom (enter your own)** – for entering a custom format string
-- 🔙 Close – cancels the selection
-
-**Full Resolution Menu (triggered by "Others"):**
-- 144p (256×144)
-- 240p (426×240)
-- 360p (640×360)
-- 480p (854×480)
-- 720p (1280×720)
-- 1080p (1920×1080)
-- 1440p (2560×1440)
-- 2160p (3840×2160)
-- 4320p (7680×4320)
-- A **Back** button returns to the main menu.
-
-Usage example:
-```
-/format
-```
-Then select the desired option from the menu.
 
 ---
 
@@ -241,31 +196,6 @@ Then select the desired option from the menu.
 - **/uncache** - Clear cached subtitle language data.
 - **/reload_cache** - Reload cache from firebase to local json file
 - **/auto_cache** - Toggle turn ON/OFF mode of auto reloading of cache every N hours. 
----
-
-## Settings Menu (`/settings`)
-
-The `/settings` command opens an interactive menu with three categories:
-
-- **🧹 CLEAN**
-- **🍪 COOKIES**
-- **🎞 MEDIA**
-- **📖 INFO**
-
-Each category contains quick action buttons for the most important commands. Example (COOKIES section):
-
-```
-🧹 /clean             - Delete cookies & broken media files
-📥 /download_cookie   - Download my YouTube cookie
-🌐 /cookies_from_browser - Get cookies from browser
-🔎 /check_cookie      - Check cookie file in your folder
-🔖 /save_as_cookie    - Send text to save as cookie
-```
-
-- Pressing a button instantly runs the corresponding command (not just sends text).
-- Some buttons (like /audio, /save_as_cookie) show usage hints.
-- The menu is fully localized and does not conflict with other inline menus.
-
 ---
 
 ## Link Command Pattern Spec
@@ -343,15 +273,6 @@ Response:
 
 ---
 
-## Added New Features
-
-- Per-user cookie download.
-- Per-user database.
-- Custom playlist naming.
-- MP3 audio download support (/audio command).
-
----
-
 ## Auto-Cleaning User Directories with Crontab
 
 To prevent your server from filling up with downloaded files, you can set up a crontab task that runs every 24 hours and deletes all files in user directories (except for `cookie.txt` and `logs.txt`).
@@ -367,18 +288,6 @@ For example, add the following line to your crontab:
 - `/usr/bin/find /CHANGE/ME/TO/REAL/PATH/TO/tg-ytdlp-bot/users -type f` – Searches for all files under the users directory.
 - `! -name "cookie.txt" ! -name "logs.txt"` – Excludes `cookie.txt` and `logs.txt` files from deletion.
 - `-delete` – Deletes the files found.
-
----
-
-## TODO
-
-- ~~Add a custom formatter selector for downloads.~~
-- ~~Enhance MP3 support.~~
-- Add Google Drive support to store files.
-
----
-
-Below is an example section for your GitHub README.md that explains how to set up Firebase for your Telegram bot, including creating a Firebase project, setting up a Realtime Database with authentication, and creating a user.
 
 ---
 
