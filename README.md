@@ -18,12 +18,6 @@ Test free bot - https://t.me/tgytdlp_bot
 - Star and fork this repository. Then rename the file **_config.py** to **config.py**.
 - Add your configuration to the **config.py** file.
 
-### Setup Debian for Docker
-
-[Install Docker Engine
-](https://docs.docker.com/engine/install/)
----
-
 #### Setting up `config.py` (example for Ubuntu/Debian)
 
 ```sh
@@ -63,22 +57,13 @@ nano cookie.txt
 ```
 ---
 
-#### Building and Running with Docker
-
-```sh
-sudo docker build . -t tg-public-bot
-sudo docker ps -a
-sudo docker run tg-public-bot
-```
-
 (optional) If you want to use `/cookies_from_browser` command, after docker deployment you need to enter your docker CMD and install desktop environment (GUI) and Browser into your docker container.
 Also you will need download `yt-dlp` binary into your Docker container. See [(Optional) Preparing `yt-dlp` for `/cookies_from_browser`](#optional-preparing-yt-dlp-for-cookies_from_browser)
 
 ---
 
-## Alternative local deployment on a VM (without Docker container)
-
-If you prefer local deployment rather than docker container, you should use this commands:
+##  local deployment on a VM 
+For local deployment you should use this commands:
 
 #### Install `git` and `python3` (example for Ubuntu/Debian)
 ```sh
