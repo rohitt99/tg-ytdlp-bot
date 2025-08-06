@@ -69,7 +69,7 @@ def video_url_extractor(app, message):
     
     if url:
         users_first_name = message.chat.first_name
-        send_to_logger(message, f"User entered a **url**\n **user's name:** {users_first_name}\nURL: {full_string}")
+        send_to_logger(message, f"User entered a <b>url</b>\n <b>user's name:</b> {users_first_name}\nURL: {full_string}")
         for j in range(len(Config.BLACK_LIST)):
             if Config.BLACK_LIST[j] in full_string:
                 send_to_all(message, "User entered a porn content. Cannot be downloaded.")
@@ -125,4 +125,4 @@ def video_url_extractor(app, message):
         else:
             down_and_up(app, message, url, playlist_name, video_count, video_start_with, tags_text_full, format_override=saved_format, quality_key=quality_key)
     else:
-        send_to_all(message, f"**User entered like this:** {full_string}\n{Config.ERROR1}")
+        send_to_all(message, f"<b>User entered like this:</b> {full_string}\n{Config.ERROR1}")
