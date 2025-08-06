@@ -486,11 +486,11 @@ def down_and_up(app, message, url, playlist_name, video_count, video_start_with,
                     ytdl_opts["hls_use_mpegts"] = True
                 try:
                     if is_hls:
-                        safe_edit_message_text(user_id, proc_msg_id,
-                            f"{current_total_process}\n__Detected HLS stream.\n📥 Downloading...__")
+                                        safe_edit_message_text(user_id, proc_msg_id,
+                    f"{current_total_process}\n<i>Detected HLS stream.\n📥 Downloading...</i>")
                     else:
-                        safe_edit_message_text(user_id, proc_msg_id,
-                            f"{current_total_process}\n> __📥 Downloading using format: {ytdl_opts.get('format', 'default')}...__")
+                                            safe_edit_message_text(user_id, proc_msg_id,
+                        f"{current_total_process}\n> <i>📥 Downloading using format: {ytdl_opts.get('format', 'default')}...</i>")
                 except Exception as e:
                     logger.error(f"Status update error: {e}")
                 with yt_dlp.YoutubeDL(ytdl_opts) as ydl:
@@ -625,7 +625,7 @@ def down_and_up(app, message, url, playlist_name, video_count, video_start_with,
 
             try:
                 safe_edit_message_text(user_id, proc_msg_id,
-                    f"{info_text}\n{full_bar}   100.0%\n__☑️ Downloaded video.\n📤 Processing for upload...__")
+                    f"{info_text}\n{full_bar}   100.0%\n<i>☑️ Downloaded video.\n📤 Processing for upload...</i>")
             except Exception as e:
                 logger.error(f"Status update error after download: {e}")
 
@@ -714,7 +714,7 @@ def down_and_up(app, message, url, playlist_name, video_count, video_start_with,
                     mp4_file
                 ]
                 try:
-                    subprocess.run(ffmpeg_cmd, check=True, encoding='utf-8', errors='replace')
+                    subprocess.run(ffmpeg_cmd, check=True, capture_output=True, text=True, encoding='utf-8', errors='replace')
                     os.remove(user_vid_path)
                     user_vid_path = mp4_file
                     final_name = mp4_basename
@@ -798,7 +798,7 @@ def down_and_up(app, message, url, playlist_name, video_count, video_start_with,
             max_size = get_user_split_size(user_id)  # 1.95 GB - close to Telegram's 2GB limit with 50MB safety margin
             if int(video_size_in_bytes) > max_size:
                 safe_edit_message_text(user_id, proc_msg_id,
-                    f"{info_text}\n{full_bar}   100.0%\n__⚠️ Your video size ({video_size}) is too large.__\n__Splitting file...__ ✂️")
+                    f"{info_text}\n{full_bar}   100.0%\n<i>⚠️ Your video size ({video_size}) is too large.</i>\n<i>Splitting file...</i> ✂️")
                 returned = split_video_2(dir_path, sanitize_filename(caption_name), after_rename_abs_path, int(video_size_in_bytes), max_size, int(duration))
                 caption_lst = returned.get("video")
                 path_lst = returned.get("path")
@@ -880,10 +880,10 @@ def down_and_up(app, message, url, playlist_name, video_count, video_start_with,
                             playlist_indices.append(current_video_index)
                             playlist_msg_ids.append(video_msg.id)
                         else:
-                            # Accumulate IDs of parts for split video
-                            split_msg_ids.append(video_msg.id)
-                    safe_edit_message_text(user_id, proc_msg_id,
-                                          f"{info_text}\n{full_bar}   100.0%\n__📤 Splitted part {p + 1} file uploaded__")
+                                                          # Accumulate IDs of parts for split video
+                              split_msg_ids.append(video_msg.id)
+                              safe_edit_message_text(user_id, proc_msg_id,
+                                  f"{info_text}\n{full_bar}   100.0%\n<i>📤 Splitted part {p + 1} file uploaded</i>")
                     if p < len(caption_lst) - 1:
                         threading.Event().wait(2)
                     if os.path.exists(splited_thumb_dir):
@@ -909,7 +909,7 @@ def down_and_up(app, message, url, playlist_name, video_count, video_start_with,
                     os.remove(thumb_dir)
                 if os.path.exists(user_vid_path):
                     os.remove(user_vid_path)
-                success_msg = f"**✅ Upload complete** - {video_count} files uploaded.\n{Config.CREDITS_MSG}"
+                success_msg = f"<b>✅ Upload complete</b> - {video_count} files uploaded.\n{Config.CREDITS_MSG}"
                 safe_edit_message_text(user_id, proc_msg_id, success_msg)
                 send_to_logger(message, "Video upload completed with file splitting.")
                 break
@@ -1121,7 +1121,7 @@ def down_and_up(app, message, url, playlist_name, video_count, video_start_with,
                                 else:
                                     logger.info("Video with subtitles (subs.txt found) is not cached!")
                         safe_edit_message_text(user_id, proc_msg_id,
-                            f"{info_text}\n{full_bar}   100.0%\n**🎞 Video duration:** __{TimeFormatter(duration * 1000)}__\n1 file uploaded.")
+                            f"{info_text}\n{full_bar}   100.0%\n<b>🎞 Video duration:</b> <i>{TimeFormatter(duration * 1000)}</i>\n1 file uploaded.")
                         send_mediainfo_if_enabled(user_id, after_rename_abs_path, message)
                         
                         # Clean up video file and thumbnail
@@ -1136,7 +1136,7 @@ def down_and_up(app, message, url, playlist_name, video_count, video_start_with,
                         send_to_all(message, f"❌ Error sending video: {str(e)}")
                         continue
         if successful_uploads == len(indices_to_download):
-            success_msg = f"**✅ Upload complete** - {video_count} files uploaded.\n{Config.CREDITS_MSG}"
+            success_msg = f"<b>✅ Upload complete</b> - {video_count} files uploaded.\n{Config.CREDITS_MSG}"
             safe_edit_message_text(user_id, proc_msg_id, success_msg)
             send_to_logger(message, success_msg)
 
