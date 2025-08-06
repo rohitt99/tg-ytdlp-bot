@@ -86,7 +86,7 @@ def send_videos(
                 progress_args=(
                     user_id,
                     msg_id,
-                    f"{info_text}\n**Video duration:** __{TimeFormatter(duration*1000)}__\n\n__📤 Uploading Video...__"
+                    f"{info_text}\n<b>Video duration:</b> <i>{TimeFormatter(duration*1000)}</i>\n\n<i>📤 Uploading Video...</i>"
                 ),
                 reply_to_message_id=message.id,
                 parse_mode=enums.ParseMode.HTML
@@ -115,7 +115,7 @@ def send_videos(
                         progress_args=(
                             user_id,
                             msg_id,
-                            f"{info_text}\n**Video duration:** __{TimeFormatter(duration*1000)}__\n__📤 Uploading Video...__"
+                            f"{info_text}\n<b>Video duration:</b> <i>{TimeFormatter(duration*1000)}</i>\n<i>📤 Uploading Video...</i>"
                         ),
                         reply_to_message_id=message.id,
                         parse_mode=enums.ParseMode.HTML
@@ -135,7 +135,7 @@ def send_videos(
                         progress_args=(
                             user_id,
                             msg_id,
-                            f"{info_text}\n**Video duration:** __{TimeFormatter(duration*1000)}__\n__📤 Uploading Video...__"
+                            f"{info_text}\n<b>Video duration:</b> <i>{TimeFormatter(duration*1000)}</i>\n<i>📤 Uploading Video...</i>"
                         ),
                         reply_to_message_id=message.id,
                         parse_mode=enums.ParseMode.HTML
