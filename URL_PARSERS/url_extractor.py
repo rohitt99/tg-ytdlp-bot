@@ -51,7 +51,7 @@ def url_distractor(app, message):
             check_user(message)
             app.send_message(
                 message.chat.id,
-                f"Hello {message.chat.first_name},\n \n__This bot🤖 can download any videos into telegram directly.😊 For more information press **/help**__ 👈\n \n {Config.CREDITS_MSG}")
+                f"Hello {message.chat.first_name},\n \n<i>This bot🤖 can download any videos into telegram directly.😊 For more information press <b>/help</b></i> 👈\n \n {Config.CREDITS_MSG}")
             send_to_logger(message, f"{message.chat.id} - user started the bot")
         return
 
