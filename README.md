@@ -68,7 +68,6 @@ pip install --no-cache-dir -r requirements.txt
 pip uninstall urllib3 -y
 pip install --no-cache-dir --force-reinstall "urllib3==1.26.20"
 pip install --no-deps moviepy==1.0.3
-python3 magic.py
 ```
 ---
 ### Installing ffmpeg (example for Ubuntu/Debian)
@@ -139,6 +138,11 @@ python3 magic.py
 
 </details>
 
+Now yoy can start the bot
+```sh
+source venv/bin/activate
+python3 magic.py
+```
 ---
 
 ## New Commands and Features
