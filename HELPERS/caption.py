@@ -20,7 +20,7 @@ def caption_editor(app, message):
         user_id = message.chat.id
         caption = message.text
         video_file_id = message.reply_to_message.video.file_id
-        info_of_video = f"\n**Caption:** `{caption}`\n**User id:** `{user_id}`\n**User first name:** `{users_name}`\n**Video file id:** `{video_file_id}`"
+        info_of_video = f"\n<b>Caption:</b> <code>{caption}</code>\n<b>User id:</b> <code>{user_id}</code>\n<b>User first name:</b> <code>{users_name}</code>\n<b>Video file id:</b> <code>{video_file_id}</code>"
         # Sending to logs
         send_to_logger(message, info_of_video)
         app.send_video(user_id, video_file_id, caption=caption)
