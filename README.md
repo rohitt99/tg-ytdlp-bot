@@ -272,9 +272,10 @@ Then select the desired option from the menu.
 
 The `/settings` command opens an interactive menu with three categories:
 
+- **🧹 CLEAN**
 - **🍪 COOKIES**
 - **🎞 MEDIA**
-- **📖 LOGS**
+- **📖 INFO**
 
 Each category contains quick action buttons for the most important commands. Example (COOKIES section):
 
