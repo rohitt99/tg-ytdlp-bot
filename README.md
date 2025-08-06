@@ -12,7 +12,7 @@ Test free bot - https://t.me/tgytdlp_bot
 
 ---
 
-## Deploy on a VM in a Docker container
+## Deploy on a VM 
 
 - First, add your bot to the **logging channel** and **subscription channel**. Both are required.
 - Star and fork this repository. Then rename the file **_config.py** to **config.py**.
