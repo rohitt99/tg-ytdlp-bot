@@ -57,11 +57,6 @@ nano cookie.txt
 ```
 ---
 
-(optional) If you want to use `/cookies_from_browser` command, after docker deployment you need to enter your docker CMD and install desktop environment (GUI) and Browser into your docker container.
-Also you will need download `yt-dlp` binary into your Docker container. See [(Optional) Preparing `yt-dlp` for `/cookies_from_browser`](#optional-preparing-yt-dlp-for-cookies_from_browser)
-
----
-
 ##  local deployment on a VM 
 For local deployment you should use this commands:
 
