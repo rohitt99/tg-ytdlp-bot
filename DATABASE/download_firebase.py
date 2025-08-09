@@ -27,12 +27,13 @@ except ImportError:
     sys.exit(1)
 
 try:
-    import pyrebase
     import requests
+    import firebase_admin
+    from firebase_admin import credentials
 except ImportError:
-    # Don't exit in test environment, just continue
-    pyrebase = None
     requests = None
+    firebase_admin = None
+    credentials = None
 
 # Все параметры берём из config.py
 FIREBASE_CONFIG = getattr(Config, 'FIREBASE_CONF', None)
@@ -46,43 +47,54 @@ if not FIREBASE_CONFIG or not FIREBASE_USER or not FIREBASE_PASSWORD:
 
 def download_firebase_dump():
     """Скачивает весь дамп Firebase Realtime Database"""
-    if pyrebase is None or requests is None:
-        print("⚠️ Firebase dependencies not available (pyrebase, requests)")
+    if requests is None:
+        print("⚠️ Dependency not available: requests")
         return False
-        
+
     try:
         print(f"🔄 Starting Firebase dump download at {datetime.now()}")
-        
-        # Инициализация Firebase
-        firebase = pyrebase.initialize_app(FIREBASE_CONFIG)
-        auth = firebase.auth()
-        
-        # Аутентификация
-        print("🔐 Authenticating with Firebase...")
-        user = auth.sign_in_with_email_and_password(FIREBASE_USER, FIREBASE_PASSWORD)
-        id_token = user["idToken"]
+
+        database_url = FIREBASE_CONFIG.get("databaseURL")
+        if not database_url:
+            print("❌ FIREBASE_CONF.databaseURL не задан")
+            return False
+
+        # Для скачивания дампа используем REST API и custom token/ID token. 
+        # Предпочтительно ID токен через REST signInWithPassword.
+        import requests as _rq
+        key = FIREBASE_CONFIG.get("apiKey")
+        if not key:
+            print("❌ FIREBASE_CONF.apiKey не задан для получения idToken")
+            return False
+
+        auth_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={key}"
+        resp = _rq.post(auth_url, json={
+            "email": FIREBASE_USER,
+            "password": FIREBASE_PASSWORD,
+            "returnSecureToken": True,
+        }, timeout=60)
+        resp.raise_for_status()
+        id_token = resp.json()["idToken"]
         print("✅ Authentication successful")
-        
+
         # Скачивание данных
         print("📥 Downloading database dump...")
-        url = f"{FIREBASE_CONFIG['databaseURL']}/.json?auth={id_token}"
-        response = requests.get(url, timeout=300)  # 5 минут таймаут
+        url = f"{database_url}/.json?auth={id_token}"
+        response = requests.get(url, timeout=300)
         response.raise_for_status()
-        
+
         # Сохранение в файл
         with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
             json.dump(response.json(), f, ensure_ascii=False, indent=2)
-        
-        # Статистика
+
         data = response.json()
         if data:
             total_keys = len(data)
-            print(f"✅ Firebase database downloaded successfully!")
+            print("✅ Firebase database downloaded successfully!")
             print(f"📊 Total root nodes: {total_keys}")
             print(f"💾 Saved to: {OUTPUT_FILE}")
             print(f"📏 File size: {os.path.getsize(OUTPUT_FILE)} bytes")
-            
-            # Показываем структуру
+
             print("\n📋 Database structure:")
             for key in data.keys():
                 if isinstance(data[key], dict):
@@ -92,9 +104,9 @@ def download_firebase_dump():
                     print(f"  - {key}: {type(data[key]).__name__}")
         else:
             print("⚠️ Database is empty")
-            
+
         return True
-        
+
     except Exception as e:
         print(f"❌ Error downloading Firebase dump: {e}")
         return False
