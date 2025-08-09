@@ -25,7 +25,7 @@ from types import SimpleNamespace
 from typing import Tuple
 from urllib.parse import urlparse, parse_qs, urlunparse, unquote, urlencode
 import traceback
-import pyrebase
+# removed pyrebase (migrated to firebase_admin)
 import tldextract
 # from moviepy.editor import VideoFileClip
 from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
