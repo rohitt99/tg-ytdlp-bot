@@ -5,9 +5,6 @@ from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from pyrogram.enums import ChatMemberStatus
 import os
 
-# Get app instance for decorators
-app = get_app()
-
 def humanbytes(size):
     # https://stackoverflow.com/a/49361727/4723940
     # 2 ** 10 = 1024
@@ -68,6 +65,10 @@ def check_user(message):
     
     # Check if user is in channel (for non-admins)
     if int(message.chat.id) not in Config.ADMIN:
+        app = get_app()
+        if app is None:
+            logger.error("App instance is None in check_user")
+            return False
         return is_user_in_channel(app, message)
     return True
 
