@@ -129,8 +129,10 @@ def find_python_files(source_dir):
 def update_file_from_source(source_file, target_file):
     """Обновляет файл из исходного репозитория"""
     try:
-        # Создаем директории, если их нет
-        os.makedirs(os.path.dirname(target_file), exist_ok=True)
+        # Создаем директории, если их нет (только если файл не в корневой папке)
+        dir_name = os.path.dirname(target_file)
+        if dir_name:  # Если директория не пустая
+            os.makedirs(dir_name, exist_ok=True)
         
         # Создаем резервную копию
         backup_path = backup_file(target_file)
