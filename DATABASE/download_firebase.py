@@ -28,10 +28,14 @@ except ImportError:
 
 try:
     import requests
+    from requests import Session
+    from requests.adapters import HTTPAdapter
     import firebase_admin
     from firebase_admin import credentials
 except ImportError:
     requests = None
+    Session = None
+    HTTPAdapter = None
     firebase_admin = None
     credentials = None
 
@@ -47,10 +51,27 @@ if not FIREBASE_CONFIG or not FIREBASE_USER or not FIREBASE_PASSWORD:
 
 def download_firebase_dump():
     """Скачивает весь дамп Firebase Realtime Database"""
-    if requests is None:
-        print("⚠️ Dependency not available: requests")
+    if requests is None or Session is None:
+        print("⚠️ Dependency not available: requests or Session")
         return False
 
+    # Create session for connection pooling
+    session = Session()
+    session.headers.update({
+        'User-Agent': 'tg-ytdlp-bot/1.0',
+        'Connection': 'keep-alive'
+    })
+    
+    # Configure connection pool to prevent too many open files
+    adapter = HTTPAdapter(
+        pool_connections=5,   # Number of connection pools to cache
+        pool_maxsize=10,      # Maximum number of connections in each pool
+        max_retries=3,        # Number of retries for failed requests
+        pool_block=False      # Don't block when pool is full
+    )
+    session.mount('http://', adapter)
+    session.mount('https://', adapter)
+    
     try:
         print(f"🔄 Starting Firebase dump download at {datetime.now()}")
 
@@ -61,14 +82,13 @@ def download_firebase_dump():
 
         # Для скачивания дампа используем REST API и custom token/ID token. 
         # Предпочтительно ID токен через REST signInWithPassword.
-        import requests as _rq
         key = FIREBASE_CONFIG.get("apiKey")
         if not key:
             print("❌ FIREBASE_CONF.apiKey не задан для получения idToken")
             return False
 
         auth_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={key}"
-        resp = _rq.post(auth_url, json={
+        resp = session.post(auth_url, json={
             "email": FIREBASE_USER,
             "password": FIREBASE_PASSWORD,
             "returnSecureToken": True,
@@ -80,7 +100,7 @@ def download_firebase_dump():
         # Скачивание данных
         print("📥 Downloading database dump...")
         url = f"{database_url}/.json?auth={id_token}"
-        response = requests.get(url, timeout=300)
+        response = session.get(url, timeout=300)
         response.raise_for_status()
 
         # Сохранение в файл
@@ -110,6 +130,9 @@ def download_firebase_dump():
     except Exception as e:
         print(f"❌ Error downloading Firebase dump: {e}")
         return False
+    finally:
+        # Always close the session
+        session.close()
 
 def main():
     print("🚀 Firebase Database Dumper (config-driven)")
