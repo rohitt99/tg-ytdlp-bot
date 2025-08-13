@@ -138,6 +138,16 @@ def stop_auto_cache_reloader():
         print("🛑 Auto Firebase cache reloader stopped")
     auto_cache_thread = None
 
+def close_all_firebase_connections():
+    """Close all Firebase connections to prevent file descriptor leaks"""
+    try:
+        from DATABASE.firebase_init import db
+        if hasattr(db, 'close'):
+            db.close()
+            print("✅ Firebase connections closed successfully")
+    except Exception as e:
+        print(f"❌ Error closing Firebase connections: {e}")
+
 def toggle_auto_cache_reloader():
     """Switchs the transload mode."""
     global auto_cache_enabled
