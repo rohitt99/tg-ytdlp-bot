@@ -11,6 +11,16 @@ from HELPERS.logger import logger
 # Get app instance for decorators
 app = get_app()
 
+def close_firebase_connections():
+    """Close Firebase connections to prevent file descriptor leaks"""
+    try:
+        from DATABASE.firebase_init import db
+        if hasattr(db, 'close'):
+            db.close()
+            logger.info("Firebase connections closed successfully")
+    except Exception as e:
+        logger.error(f"Error closing Firebase connections: {e}")
+
 def signal_handler(sig, frame):
     """
     Handler for system signals to ensure graceful shutdown
@@ -20,6 +30,9 @@ def signal_handler(sig, frame):
         frame: Current stack frame
     """
     logger.info(f"Received signal {sig}, shutting down gracefully...")
+
+    # Close Firebase connections first
+    close_firebase_connections()
 
     # Stop all active animations and threads
     active_threads = [t for t in threading.enumerate()
