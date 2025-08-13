@@ -5,6 +5,8 @@ import os
 from typing import Any, Dict, List, Optional
 
 import requests
+from requests import Session
+from requests.adapters import HTTPAdapter
 import firebase_admin
 from firebase_admin import credentials, db as admin_db
 
@@ -136,10 +138,76 @@ class RestDBAdapter:
         self._api_key = api_key
         self._path = path if path.startswith("/") else f"/{path}"
         self._lock = threading.Lock()
+        # Create a session for connection pooling
+        self._session = Session()
+        # Configure session for better connection management
+        self._session.headers.update({
+            'User-Agent': 'tg-ytdlp-bot/1.0',
+            'Connection': 'close'  # Изменено с 'keep-alive' на 'close'
+        })
+        # Configure connection pool to prevent too many open files
+        adapter = HTTPAdapter(
+            pool_connections=3,   # Уменьшено до минимума
+            pool_maxsize=5,       # Уменьшено до минимума
+            max_retries=2,        # Уменьшено количество повторных попыток
+            pool_block=False      # Don't block when pool is full
+        )
+        self._session.mount('http://', adapter)
+        self._session.mount('https://', adapter)
         # Start background refresher if possible
         if self._refresh_token:
             thread = threading.Thread(target=self._token_refresher, daemon=True)
             thread.start()
+
+    def __del__(self):
+        """Cleanup method to close session when object is destroyed"""
+        try:
+            if hasattr(self, '_session'):
+                logger.info(f"🗑️ Destroying Firebase session for path: {self._path}")
+                self._session.close()
+        except:
+            pass
+
+    def close(self):
+        """Explicitly close the session"""
+        try:
+            if hasattr(self, '_session'):
+                logger.info(f"🔒 Closing Firebase session for path: {self._path}")
+                
+                # Закрываем все соединения в пуле
+                for adapter in self._session.adapters.values():
+                    if hasattr(adapter, 'poolmanager'):
+                        pool = adapter.poolmanager
+                        if hasattr(pool, 'clear'):
+                            pool.clear()
+                            logger.info("🧹 Connection pool cleared")
+                        
+                        # Принудительно закрываем все соединения в пуле
+                        try:
+                            if hasattr(pool, 'pools'):
+                                for pool_key in list(pool.pools.keys()):
+                                    pool_obj = pool.pools[pool_key]
+                                    if hasattr(pool_obj, 'close'):
+                                        pool_obj.close()
+                                        logger.info(f"🔒 Closed pool: {pool_key}")
+                        except Exception as pool_error:
+                            logger.warning(f"⚠️ Error closing pools: {pool_error}")
+                
+                # Закрываем сессию
+                self._session.close()
+                logger.info("✅ Firebase session closed successfully")
+                
+                # Удаляем ссылку на сессию
+                delattr(self, '_session')
+                
+        except Exception as e:
+            logger.error(f"❌ Error closing Firebase session: {e}")
+            # Пытаемся закрыть сессию даже при ошибке
+            try:
+                if hasattr(self, '_session'):
+                    self._session.close()
+            except:
+                pass
 
     def _token_refresher(self):
         # Refresh every 50 minutes similar to old logic
@@ -147,7 +215,7 @@ class RestDBAdapter:
             time.sleep(3000)
             try:
                 url = f"https://securetoken.googleapis.com/v1/token?key={self._api_key}"
-                resp = requests.post(url, data={
+                resp = self._session.post(url, data={
                     "grant_type": "refresh_token",
                     "refresh_token": self._refresh_token,
                 }, timeout=30)
@@ -178,26 +246,26 @@ class RestDBAdapter:
         return f"{self._database_url}{self._path}.json"
 
     def set(self, data: Any) -> None:
-        r = requests.put(self._url(), params=self._auth_params(), json=data, timeout=60)
+        r = self._session.put(self._url(), params=self._auth_params(), json=data, timeout=60)
         r.raise_for_status()
 
     def update(self, data: Dict[str, Any]) -> None:
-        r = requests.patch(self._url(), params=self._auth_params(), json=data, timeout=60)
+        r = self._session.patch(self._url(), params=self._auth_params(), json=data, timeout=60)
         r.raise_for_status()
 
     def remove(self) -> None:
-        r = requests.delete(self._url(), params=self._auth_params(), timeout=60)
+        r = self._session.delete(self._url(), params=self._auth_params(), timeout=60)
         r.raise_for_status()
 
     def push(self, data: Any):
         # POST to parent path to create unique key
         parent_url = f"{self._database_url}{self._path}.json"
-        r = requests.post(parent_url, params=self._auth_params(), json=data, timeout=60)
+        r = self._session.post(parent_url, params=self._auth_params(), json=data, timeout=60)
         r.raise_for_status()
         return r.json()
 
     def get(self) -> _SnapshotCompat:
-        r = requests.get(self._url(), params=self._auth_params(), timeout=60)
+        r = self._session.get(self._url(), params=self._auth_params(), timeout=60)
         r.raise_for_status()
         return _SnapshotCompat(r.json())
 
@@ -211,21 +279,38 @@ else:
     api_key = getattr(Config, "FIREBASE_CONF", {}).get("apiKey")
     if not api_key:
         raise RuntimeError("FIREBASE_CONF.apiKey отсутствует — нужен для REST аутентификации")
-    # Sign in via REST
-    auth_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}"
-    resp = requests.post(auth_url, json={
-        "email": getattr(Config, "FIREBASE_USER", None),
-        "password": getattr(Config, "FIREBASE_PASSWORD", None),
-        "returnSecureToken": True,
-    }, timeout=60)
-    resp.raise_for_status()
-    payload = resp.json()
-    id_token = payload.get("idToken")
-    refresh_token = payload.get("refreshToken")
-    if not id_token:
-        raise RuntimeError("Не удалось получить idToken через REST аутентификацию")
-    logger.info("✅ REST Firebase auth successful")
-    db = RestDBAdapter(database_url, id_token, refresh_token, api_key, "/")
+    # Sign in via REST using session
+    auth_session = Session()
+    auth_session.headers.update({
+        'User-Agent': 'tg-ytdlp-bot/1.0',
+        'Connection': 'keep-alive'
+    })
+    # Configure connection pool for auth session
+    auth_adapter = HTTPAdapter(
+        pool_connections=5,   # Number of connection pools to cache
+        pool_maxsize=10,      # Maximum number of connections in each pool
+        max_retries=3,        # Number of retries for failed requests
+        pool_block=False      # Don't block when pool is full
+    )
+    auth_session.mount('http://', auth_adapter)
+    auth_session.mount('https://', auth_adapter)
+    try:
+        auth_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}"
+        resp = auth_session.post(auth_url, json={
+            "email": getattr(Config, "FIREBASE_USER", None),
+            "password": getattr(Config, "FIREBASE_PASSWORD", None),
+            "returnSecureToken": True,
+        }, timeout=60)
+        resp.raise_for_status()
+        payload = resp.json()
+        id_token = payload.get("idToken")
+        refresh_token = payload.get("refreshToken")
+        if not id_token:
+            raise RuntimeError("Не удалось получить idToken через REST аутентификацию")
+        logger.info("✅ REST Firebase auth successful")
+        db = RestDBAdapter(database_url, id_token, refresh_token, api_key, "/")
+    finally:
+        auth_session.close()
 
 
 def db_child_by_path(db_adapter: FirebaseDBAdapter, path: str) -> FirebaseDBAdapter:
