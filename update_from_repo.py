@@ -1,21 +1,20 @@
 #!/usr/bin/env python3
 """
 Скрипт для автоматического обновления кода из GitHub репозитория
-Заменяет только *.py файлы, исключая конфигурационные файлы
+Скачивает репозиторий во временную папку и заменяет нужные файлы
 """
 
 import os
 import sys
-import requests
-import json
 import shutil
+import tempfile
+import subprocess
 from pathlib import Path
 from datetime import datetime
 
 # Конфигурация
-REPO_URL = "https://github.com/chelaxian/tg-ytdlp-bot"
+REPO_URL = "https://github.com/chelaxian/tg-ytdlp-bot.git"
 BRANCH = "newdesign"
-API_BASE = "https://api.github.com/repos/chelaxian/tg-ytdlp-bot"
 
 # Файлы и папки, которые НЕ должны обновляться
 EXCLUDED_FILES = [
@@ -49,37 +48,6 @@ def log(message, level="INFO"):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"[{timestamp}] {level}: {message}")
 
-def get_file_content_from_github(file_path):
-    """Получает содержимое файла из GitHub API"""
-    try:
-        url = f"{API_BASE}/contents/{file_path}?ref={BRANCH}"
-        response = requests.get(url, timeout=30)
-        response.raise_for_status()
-        
-        data = response.json()
-        if data.get("type") == "file":
-            import base64
-            content = base64.b64decode(data["content"]).decode('utf-8')
-            return content
-        else:
-            return None
-    except Exception as e:
-        log(f"Ошибка получения файла {file_path}: {e}", "ERROR")
-        return None
-
-def get_repo_tree():
-    """Получает дерево файлов из репозитория"""
-    try:
-        url = f"{API_BASE}/git/trees/{BRANCH}?recursive=1"
-        response = requests.get(url, timeout=30)
-        response.raise_for_status()
-        
-        data = response.json()
-        return data.get("tree", [])
-    except Exception as e:
-        log(f"Ошибка получения дерева репозитория: {e}", "ERROR")
-        return []
-
 def should_update_file(file_path):
     """Проверяет, нужно ли обновлять файл"""
     # Проверяем исключенные файлы
@@ -110,26 +78,73 @@ def backup_file(file_path):
         log(f"Ошибка создания резервной копии {file_path}: {e}", "ERROR")
     return None
 
-def update_file(file_path, content):
-    """Обновляет файл с новым содержимым"""
+def clone_repository(temp_dir):
+    """Клонирует репозиторий во временную папку"""
+    try:
+        log(f"📥 Клонирование репозитория в {temp_dir}...")
+        
+        # Команда для клонирования
+        cmd = [
+            'git', 'clone', 
+            '--branch', BRANCH,
+            '--depth', '1',  # Только последний коммит
+            '--single-branch',
+            REPO_URL, 
+            temp_dir
+        ]
+        
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+        
+        if result.returncode == 0:
+            log("✅ Репозиторий успешно клонирован")
+            return True
+        else:
+            log(f"❌ Ошибка клонирования: {result.stderr}", "ERROR")
+            return False
+            
+    except subprocess.TimeoutExpired:
+        log("❌ Таймаут при клонировании репозитория", "ERROR")
+        return False
+    except Exception as e:
+        log(f"❌ Ошибка клонирования: {e}", "ERROR")
+        return False
+
+def find_python_files(source_dir):
+    """Находит все Python файлы в исходной директории"""
+    python_files = []
+    
+    for root, dirs, files in os.walk(source_dir):
+        # Исключаем ненужные директории
+        dirs[:] = [d for d in dirs if d not in ['.git', '__pycache__', 'venv']]
+        
+        for file in files:
+            if file.endswith('.py'):
+                # Получаем относительный путь
+                rel_path = os.path.relpath(os.path.join(root, file), source_dir)
+                if should_update_file(rel_path):
+                    python_files.append(rel_path)
+    
+    return sorted(python_files)
+
+def update_file_from_source(source_file, target_file):
+    """Обновляет файл из исходного репозитория"""
     try:
         # Создаем директории, если их нет
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        os.makedirs(os.path.dirname(target_file), exist_ok=True)
         
         # Создаем резервную копию
-        backup_path = backup_file(file_path)
+        backup_path = backup_file(target_file)
         
-        # Записываем новое содержимое
-        with open(file_path, 'w', encoding='utf-8') as f:
-            f.write(content)
+        # Копируем файл
+        shutil.copy2(source_file, target_file)
         
-        log(f"Обновлен файл: {file_path}")
+        log(f"Обновлен файл: {target_file}")
         if backup_path:
             log(f"Резервная копия: {backup_path}")
         
         return True
     except Exception as e:
-        log(f"Ошибка обновления файла {file_path}: {e}", "ERROR")
+        log(f"Ошибка обновления файла {target_file}: {e}", "ERROR")
         return False
 
 def main():
@@ -143,63 +158,82 @@ def main():
         log("❌ Файл magic.py не найден. Убедитесь, что скрипт запущен в папке с ботом.", "ERROR")
         return False
     
-    # Получаем дерево файлов из репозитория
-    log("📥 Получение списка файлов из репозитория...")
-    tree = get_repo_tree()
-    
-    if not tree:
-        log("❌ Не удалось получить список файлов из репозитория", "ERROR")
+    # Проверяем наличие git
+    if not shutil.which('git'):
+        log("❌ Git не найден. Установите Git для работы скрипта.", "ERROR")
         return False
     
-    # Фильтруем только Python файлы для обновления
-    python_files = []
-    for item in tree:
-        if item.get("type") == "blob" and should_update_file(item["path"]):
-            python_files.append(item["path"])
-    
-    log(f"📋 Найдено {len(python_files)} Python файлов для обновления")
-    
-    # Показываем список файлов, которые будут обновлены
-    log("📝 Файлы для обновления:")
-    for file_path in python_files:
-        log(f"  - {file_path}")
-    
-    # Спрашиваем подтверждение
-    response = input("\n🤔 Продолжить обновление? (y/N): ").strip().lower()
-    if response not in ['y', 'yes', 'да']:
-        log("❌ Обновление отменено пользователем")
-        return False
-    
-    # Обновляем файлы
-    updated_count = 0
-    failed_count = 0
-    
-    for file_path in python_files:
-        log(f"🔄 Обновление {file_path}...")
+    # Создаем временную директорию
+    temp_dir = None
+    try:
+        temp_dir = tempfile.mkdtemp(prefix="tg-ytdlp-update-")
+        log(f"📁 Создана временная директория: {temp_dir}")
         
-        content = get_file_content_from_github(file_path)
-        if content is not None:
-            if update_file(file_path, content):
+        # Клонируем репозиторий
+        if not clone_repository(temp_dir):
+            return False
+        
+        # Находим Python файлы
+        python_files = find_python_files(temp_dir)
+        
+        if not python_files:
+            log("❌ Не найдено Python файлов для обновления", "ERROR")
+            return False
+        
+        log(f"📋 Найдено {len(python_files)} Python файлов для обновления")
+        
+        # Показываем список файлов, которые будут обновлены
+        log("📝 Файлы для обновления:")
+        for file_path in python_files:
+            log(f"  - {file_path}")
+        
+        # Спрашиваем подтверждение
+        response = input("\n🤔 Продолжить обновление? (y/N): ").strip().lower()
+        if response not in ['y', 'yes', 'да']:
+            log("❌ Обновление отменено пользователем")
+            return False
+        
+        # Обновляем файлы
+        updated_count = 0
+        failed_count = 0
+        
+        for file_path in python_files:
+            log(f"🔄 Обновление {file_path}...")
+            
+            source_file = os.path.join(temp_dir, file_path)
+            target_file = file_path
+            
+            if update_file_from_source(source_file, target_file):
                 updated_count += 1
             else:
                 failed_count += 1
+        
+        # Результаты
+        log("=" * 50)
+        log("📊 Результаты обновления:")
+        log(f"✅ Успешно обновлено: {updated_count}")
+        log(f"❌ Ошибок: {failed_count}")
+        log(f"📁 Всего файлов: {len(python_files)}")
+        
+        if failed_count == 0:
+            log("🎉 Все файлы успешно обновлены!")
+            return True
         else:
-            log(f"❌ Не удалось получить содержимое файла {file_path}", "ERROR")
-            failed_count += 1
-    
-    # Результаты
-    log("=" * 50)
-    log("📊 Результаты обновления:")
-    log(f"✅ Успешно обновлено: {updated_count}")
-    log(f"❌ Ошибок: {failed_count}")
-    log(f"📁 Всего файлов: {len(python_files)}")
-    
-    if failed_count == 0:
-        log("🎉 Все файлы успешно обновлены!")
-        return True
-    else:
-        log(f"⚠️ Обновлено с ошибками: {failed_count} файлов", "WARNING")
+            log(f"⚠️ Обновлено с ошибками: {failed_count} файлов", "WARNING")
+            return False
+            
+    except Exception as e:
+        log(f"❌ Критическая ошибка: {e}", "ERROR")
         return False
+    
+    finally:
+        # Удаляем временную директорию
+        if temp_dir and os.path.exists(temp_dir):
+            try:
+                shutil.rmtree(temp_dir)
+                log(f"🗑️ Временная директория удалена: {temp_dir}")
+            except Exception as e:
+                log(f"⚠️ Не удалось удалить временную директорию: {e}", "WARNING")
 
 def show_excluded_files():
     """Показывает список исключенных файлов и папок"""
