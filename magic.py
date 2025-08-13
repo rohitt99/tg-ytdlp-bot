@@ -19,6 +19,8 @@ import random
 import sys
 import threading
 import time
+import signal
+import atexit
 from datetime import datetime
 from PIL import Image
 from types import SimpleNamespace
@@ -135,5 +137,27 @@ starting_point = []
 
 # Run the automatic loading of the Firebase cache
 start_auto_cache_reloader()
+
+def cleanup_on_exit():
+    """Cleanup function to close Firebase connections on exit"""
+    try:
+        from DATABASE.cache_db import close_all_firebase_connections
+        close_all_firebase_connections()
+        print("✅ Cleanup completed on exit")
+    except Exception as e:
+        print(f"❌ Error during cleanup: {e}")
+
+# Register cleanup function
+atexit.register(cleanup_on_exit)
+
+# Register signal handlers for graceful shutdown
+def signal_handler(sig, frame):
+    """Handle shutdown signals gracefully"""
+    print(f"\n🛑 Received signal {sig}, shutting down gracefully...")
+    cleanup_on_exit()
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
 
 app.run()
