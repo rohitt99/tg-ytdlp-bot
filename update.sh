@@ -19,11 +19,13 @@ if ! command -v python3 &> /dev/null; then
     exit 1
 fi
 
-# Проверяем наличие requests
-if ! python3 -c "import requests" &> /dev/null; then
-    echo "⚠️ Предупреждение: модуль requests не установлен"
-    echo "Устанавливаем requests..."
-    pip3 install requests
+# Проверяем наличие Git
+if ! command -v git &> /dev/null; then
+    echo "❌ Ошибка: git не найден"
+    echo "Установите Git для работы скрипта:"
+    echo "  Ubuntu/Debian: sudo apt install git"
+    echo "  CentOS/RHEL: sudo yum install git"
+    exit 1
 fi
 
 # Запускаем обновление
