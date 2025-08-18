@@ -129,108 +129,92 @@ class FirebaseDBAdapter:
 
 
 class RestDBAdapter:
-    """Pyrebase-like adapter using Firebase Realtime Database REST API with idToken."""
+    """Pyrebase-like adapter using Firebase Realtime Database REST API with idToken.
 
-    def __init__(self, database_url: str, id_token: str, refresh_token: Optional[str], api_key: str, path: str = "/"):
+    Важно: все дочерние адаптеры (child) разделяют одно общее состояние токенов,
+    один requests.Session и один фоновой поток обновления токена.
+    """
+
+    def __init__(
+        self,
+        database_url: str,
+        id_token: str,
+        refresh_token: Optional[str],
+        api_key: str,
+        path: str = "/",
+        *,
+        _shared: Optional[dict] = None,
+        _session: Optional[Session] = None,
+        _start_refresher: bool = True,
+        _is_child: bool = False,
+    ):
         self._database_url = database_url.rstrip("/")
-        self._id_token = id_token
-        self._refresh_token = refresh_token
         self._api_key = api_key
         self._path = path if path.startswith("/") else f"/{path}"
-        self._lock = threading.Lock()
-        # Create a session for connection pooling
-        self._session = Session()
-        # Configure session for better connection management
-        self._session.headers.update({
-            'User-Agent': 'tg-ytdlp-bot/1.0',
-            'Connection': 'close'  # Изменено с 'keep-alive' на 'close'
-        })
-        # Configure connection pool to prevent too many open files
-        adapter = HTTPAdapter(
-            pool_connections=3,   # Уменьшено до минимума
-            pool_maxsize=5,       # Уменьшено до минимума
-            max_retries=2,        # Уменьшено количество повторных попыток
-            pool_block=False      # Don't block when pool is full
-        )
-        self._session.mount('http://', adapter)
-        self._session.mount('https://', adapter)
-        # Start background refresher if possible
-        if self._refresh_token:
-            thread = threading.Thread(target=self._token_refresher, daemon=True)
-            thread.start()
+        self._is_child = _is_child
 
-    def __del__(self):
-        """Cleanup method to close session when object is destroyed"""
-        try:
-            if hasattr(self, '_session'):
-                logger.info(f"🗑️ Destroying Firebase session for path: {self._path}")
-                self._session.close()
-        except:
-            pass
+        # Общее (shared) состояние между всеми child-экземплярами
+        if _shared is None:
+            self._shared = {
+                "lock": threading.RLock(),
+                "id_token": id_token,
+                "refresh_token": refresh_token,
+                "refresher_started": False,
+            }
+        else:
+            self._shared = _shared
 
-    def close(self):
-        """Explicitly close the session"""
-        try:
-            if hasattr(self, '_session'):
-                logger.info(f"🔒 Closing Firebase session for path: {self._path}")
-                
-                # Закрываем все соединения в пуле
-                for adapter in self._session.adapters.values():
-                    if hasattr(adapter, 'poolmanager'):
-                        pool = adapter.poolmanager
-                        if hasattr(pool, 'clear'):
-                            pool.clear()
-                            logger.info("🧹 Connection pool cleared")
-                        
-                        # Принудительно закрываем все соединения в пуле
-                        try:
-                            if hasattr(pool, 'pools'):
-                                for pool_key in list(pool.pools.keys()):
-                                    pool_obj = pool.pools[pool_key]
-                                    if hasattr(pool_obj, 'close'):
-                                        pool_obj.close()
-                                        logger.info(f"🔒 Closed pool: {pool_key}")
-                        except Exception as pool_error:
-                            logger.warning(f"⚠️ Error closing pools: {pool_error}")
-                
-                # Закрываем сессию
-                self._session.close()
-                logger.info("✅ Firebase session closed successfully")
-                
-                # Удаляем ссылку на сессию
-                delattr(self, '_session')
-                
-        except Exception as e:
-            logger.error(f"❌ Error closing Firebase session: {e}")
-            # Пытаемся закрыть сессию даже при ошибке
-            try:
-                if hasattr(self, '_session'):
-                    self._session.close()
-            except:
-                pass
+        # Общая сессия между всеми child-экземплярами
+        if _session is None:
+            sess = Session()
+            sess.headers.update({
+                'User-Agent': 'tg-ytdlp-bot/1.0',
+                'Connection': 'close'  # минимизируем удержание соединений
+            })
+            adapter = HTTPAdapter(
+                pool_connections=3,
+                pool_maxsize=5,
+                max_retries=2,
+                pool_block=False,
+            )
+            sess.mount('http://', adapter)
+            sess.mount('https://', adapter)
+            self._session = sess
+        else:
+            self._session = _session
+
+        # Запускаем рефрешер токена только один раз (и только у корневого адаптера)
+        if _start_refresher and self._shared.get("refresh_token"):
+            with self._shared["lock"]:
+                if not self._shared["refresher_started"]:
+                    thread = threading.Thread(target=self._token_refresher, daemon=True)
+                    thread.start()
+                    self._shared["refresher_started"] = True
 
     def _token_refresher(self):
-        # Refresh every 50 minutes similar to old logic
+        # Обновляем каждые ~50 минут
         while True:
             time.sleep(3000)
             try:
                 url = f"https://securetoken.googleapis.com/v1/token?key={self._api_key}"
+                with self._shared["lock"]:
+                    refresh_token = self._shared.get("refresh_token")
                 resp = self._session.post(url, data={
                     "grant_type": "refresh_token",
-                    "refresh_token": self._refresh_token,
+                    "refresh_token": refresh_token,
                 }, timeout=30)
                 resp.raise_for_status()
                 data = resp.json()
-                with self._lock:
-                    self._id_token = data.get("id_token", self._id_token)
-                    self._refresh_token = data.get("refresh_token", self._refresh_token)
+                with self._shared["lock"]:
+                    self._shared["id_token"] = data.get("id_token", self._shared.get("id_token"))
+                    self._shared["refresh_token"] = data.get("refresh_token", self._shared.get("refresh_token"))
                 logger.info("🔁 REST idToken refreshed")
             except Exception as e:
                 logger.error(f"❌ REST token refresh error: {e}")
 
     def _auth_params(self) -> Dict[str, str]:
-        with self._lock:
-            token = self._id_token
+        with self._shared["lock"]:
+            token = self._shared.get("id_token")
         return {"auth": token}
 
     def child(self, *path_parts: str) -> "RestDBAdapter":
@@ -240,7 +224,18 @@ class RestDBAdapter:
             if not part:
                 continue
             path = f"{path}/{part}"
-        return RestDBAdapter(self._database_url, self._id_token, self._refresh_token, self._api_key, path)
+        # ВАЖНО: не запускаем новый рефрешер и переиспользуем shared и session
+        return RestDBAdapter(
+            self._database_url,
+            self._shared.get("id_token"),
+            self._shared.get("refresh_token"),
+            self._api_key,
+            path,
+            _shared=self._shared,
+            _session=self._session,
+            _start_refresher=False,
+            _is_child=True,
+        )
 
     def _url(self) -> str:
         return f"{self._database_url}{self._path}.json"
@@ -258,7 +253,6 @@ class RestDBAdapter:
         r.raise_for_status()
 
     def push(self, data: Any):
-        # POST to parent path to create unique key
         parent_url = f"{self._database_url}{self._path}.json"
         r = self._session.post(parent_url, params=self._auth_params(), json=data, timeout=60)
         r.raise_for_status()
@@ -268,6 +262,32 @@ class RestDBAdapter:
         r = self._session.get(self._url(), params=self._auth_params(), timeout=60)
         r.raise_for_status()
         return _SnapshotCompat(r.json())
+
+    def close(self):
+        """Закрывает сетевые ресурсы только у корневого адаптера.
+        Дети разделяют сессию и не должны её закрывать.
+        """
+        if self._is_child:
+            return
+        try:
+            if hasattr(self, '_session') and self._session:
+                for adapter in self._session.adapters.values():
+                    if hasattr(adapter, 'poolmanager'):
+                        pool = adapter.poolmanager
+                        if hasattr(pool, 'clear'):
+                            pool.clear()
+                self._session.close()
+                logger.info("✅ Firebase session closed successfully (root)")
+        except Exception as e:
+            logger.error(f"❌ Error closing Firebase session: {e}")
+
+    def __del__(self):
+        # Ничего не делаем у детей, чтобы не ломать общую сессию
+        if not self._is_child:
+            try:
+                self.close()
+            except Exception:
+                pass
 
 
 # Initialize db adapter (admin or REST fallback)
