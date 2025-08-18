@@ -19,7 +19,7 @@ BRANCH = "newdesign"
 # Файлы и папки, которые НЕ должны обновляться
 EXCLUDED_FILES = [
     "CONFIG/config.py",  # Основной конфигурационный файл
-    #"requirements.txt",  # Зависимости могут отличаться
+    #"requirements.txt", # Зависимости могут отличаться
     ".env",              # Переменные окружения
     ".bot_pid",          # PID файл бота
     "bot.log",           # Логи бота
@@ -27,7 +27,7 @@ EXCLUDED_FILES = [
     "magic.session",     # Сессия Pyrogram
     "magic.session-journal",  # Журнал сессии
     "dump.json",         # Дамп Firebase
-    "firebase_cache.json",  # Кэш Firebase
+    #"firebase_cache.json",   # Кэш Firebase
 ]
 
 EXCLUDED_DIRS = [
@@ -40,7 +40,7 @@ EXCLUDED_DIRS = [
     "cookies",           # Файлы cookies
     "TXT",               # Текстовые файлы
     "_arabic_fonts_amiri",  # Шрифты
-    #"DOWN_AND_UP",       # Временные файлы загрузки
+    "_cursor",           # Временные файлы загрузки
 ]
 
 def log(message, level="INFO"):
