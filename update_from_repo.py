@@ -149,6 +149,16 @@ def update_file_from_source(source_file, target_file):
         log(f"Ошибка обновления файла {target_file}: {e}", "ERROR")
         return False
 
+def move_backups_to_backup_dir():
+    """Переносит все *.backup* файлы в каталог _backup, сохраняя структуру путей."""
+    try:
+        log("📦 Перенос бэкапов в _backup/...")
+        cmd = "mkdir -p _backup && find . -path './_backup' -prune -o -type f -name \"*.backup*\" -print0 | sed -z 's#^\\./##' | rsync -a --relative --from0 --files-from=- --remove-source-files ./ _backup/"
+        subprocess.run(["bash", "-lc", cmd], check=True)
+        log("✅ Бэкапы перенесены в _backup/")
+    except Exception as e:
+        log(f"⚠️ Не удалось перенести бэкапы: {e}", "WARNING")
+
 def main():
     """Основная функция обновления"""
     log("🚀 Запуск обновления кода из GitHub репозитория")
@@ -216,6 +226,9 @@ def main():
         log(f"✅ Успешно обновлено: {updated_count}")
         log(f"❌ Ошибок: {failed_count}")
         log(f"📁 Всего файлов: {len(python_files)}")
+
+        # Переносим все бэкапы в _backup/
+        move_backups_to_backup_dir()
         
         if failed_count == 0:
             log("🎉 Все файлы успешно обновлены!")
