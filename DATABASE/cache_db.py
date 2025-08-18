@@ -13,7 +13,8 @@ from DATABASE.firebase_init import db
 from URL_PARSERS.normalizer import normalize_url_for_cache, strip_range_from_url
 from URL_PARSERS.youtube import is_youtube_url, youtube_to_short_url, youtube_to_long_url
 from URL_PARSERS.playlist_utils import is_playlist_with_range
-from COMMANDS.subtitles_cmd import check_subs_availability, is_subs_enabled, get_user_subs_auto_mode
+# NOTE: Avoid importing COMMANDS at module import time to prevent circular imports.
+# Functions from COMMANDS.subtitles_cmd will be imported lazily inside save_to_video_cache()
 from HELPERS.qualifier import ceil_to_popular
 from DATABASE.firebase_init import db_child_by_path
 from DATABASE.download_firebase import download_firebase_dump
@@ -574,9 +575,21 @@ def save_to_video_cache(url: str, quality_key: str, message_ids: list, clear: bo
     """Saves message IDs to Firebase video cache after checking local cache to avoid duplication."""
     found_type = None
     if user_id is not None:
-        found_type = check_subs_availability(url, user_id, quality_key, return_type=True)
-        subs_enabled = is_subs_enabled(user_id)
-        auto_mode = get_user_subs_auto_mode(user_id)
+        # Lazy import to avoid circular imports at module level
+        try:
+            from COMMANDS.subtitles_cmd import (
+                check_subs_availability,
+                is_subs_enabled,
+                get_user_subs_auto_mode,
+            )
+        except Exception:
+            check_subs_availability = None
+            is_subs_enabled = lambda _uid: False
+            get_user_subs_auto_mode = lambda _uid: False
+
+        found_type = check_subs_availability(url, user_id, quality_key, return_type=True) if check_subs_availability else None
+        subs_enabled = is_subs_enabled(user_id) if callable(is_subs_enabled) else False
+        auto_mode = get_user_subs_auto_mode(user_id) if callable(get_user_subs_auto_mode) else False
         need_subs = (subs_enabled and ((auto_mode and found_type == "auto") or (not auto_mode and found_type == "normal")))
         if need_subs:
             logger.info("Video with subtitles is not cached!")
