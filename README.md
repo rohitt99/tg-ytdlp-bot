@@ -199,8 +199,70 @@ python3 magic.py
 - **/all_unblocked** - Get all unblocked users.
 - **/uncache** - Clear cached subtitle language data.
 - **/reload_cache** - Reload cache from firebase to local json file
-- **/auto_cache** - Toggle turn ON/OFF mode of auto reloading of cache every N hours. 
+- **/auto_cache** - Control auto cache reload: `/auto_cache on` | `/auto_cache off` | `/auto_cache N` (N = 1..168 hours, persisted to `CONFIG/config.py`).
 ---
+
+## Auto cache – how it works (on/off/N)
+
+The bot maintains a local JSON cache (dump) of Firebase data. A background reloader can periodically refresh this cache by first downloading a fresh dump and then reloading it into memory.
+
+- Refresh cycle:
+  - Download dump via REST (`download_firebase.py` logic)
+  - Reload local JSON into memory
+- Interval alignment: next run is aligned to steps from midnight (00:00) with your interval step (N hours).
+- Logging examples you will see:
+  - `🔄 Downloading and reloading Firebase cache dump...`
+  - `✅ Firebase cache refreshed successfully!`
+
+### Command usage
+- `/auto_cache on` – enable background auto-refresh
+- `/auto_cache off` – disable background auto-refresh
+- `/auto_cache N` – set refresh interval to N hours (1..168)
+  - This immediately updates runtime settings
+  - The value is also persisted to `CONFIG/config.py` by updating `RELOAD_CACHE_EVERY = N`
+  - The background thread is safely restarted so the new interval takes effect right away
+
+Your current default interval comes from `CONFIG/config.py`:
+```python
+RELOAD_CACHE_EVERY = 24  # in hours
+```
+
+---
+
+## Updating the bot (updater scripts)
+
+You can update only Python files from the `newdesign` branch of `chelaxian/tg-ytdlp-bot` using provided scripts. The updater will:
+- Clone the repository to a temporary directory
+- Update only `*.py` files in your working directory
+- Preserve your `CONFIG/config.py` and other excluded files/directories
+- Make backups of changed files with suffix `.backup_YYYYMMDD_HHMMSS` and move them into `_backup/` (original structure preserved)
+- Ask for confirmation before applying changes
+
+### Requirements
+- Git and Python 3 must be installed
+
+### One-command update (recommended)
+```bash
+./update.sh
+```
+- The script checks prerequisites and runs the Python updater.
+- After a successful update, restart the bot service (if you use systemd):
+```bash
+systemctl restart tg-ytdlp-bot
+journalctl -u tg-ytdlp-bot -f
+```
+
+### Manual update via Python
+```bash
+python3 update_from_repo.py --show-excluded   # show excluded files/folders
+python3 update_from_repo.py                   # interactive update (prompts for confirmation)
+```
+
+Notes:
+- Only `.py` files are updated; `CONFIG/config.py` is not touched.
+- Backups are automatically moved to `_backup/` with their relative paths.
+- The updater targets the `newdesign` branch by default.
+- If you maintain your own local modifications, review backups in `_backup/` and adjust as needed.
 
 ## Link Command Pattern Spec
 
