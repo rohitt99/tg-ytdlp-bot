@@ -165,6 +165,7 @@ def set_auto_cache_enabled(enabled: bool):
 def _persist_reload_interval_in_config(new_hours: int) -> bool:
     """Write RELOAD_CACHE_EVERY = <new_hours> back to CONFIG/config.py.
     Keeps formatting/comments around the assignment line intact where possible.
+    Also repairs previously corrupted lines if found.
     """
     try:
         cfg_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'CONFIG', 'config.py')
@@ -173,12 +174,20 @@ def _persist_reload_interval_in_config(new_hours: int) -> bool:
             return False
         with open(cfg_path, 'r', encoding='utf-8') as f:
             content = f.read()
-        # Regex to find RELOAD_CACHE_EVERY assignment (int)
-        pattern = r"^(\s*RELOAD_CACHE_EVERY\s*=\s*)(\d+)(\s*(#.*)?)$"
-        new_content = re.sub(pattern, rf"\\g<1>{int(new_hours)}\\g<3>", content, flags=re.MULTILINE)
-        if new_content == content:
-            # If not found, append a new line at the end
+        # 1) Repair accidentally corrupted backreference artifacts
+        #    e.g. a line like: \g<1>4\g<3>
+        content = re.sub(r"^\\g<1>\d+\\g<3>\s*$", "", content, flags=re.MULTILINE)
+
+        # 2) Replace existing assignment, preserving prefix/suffix
+        pattern = re.compile(r"^(\s*RELOAD_CACHE_EVERY\s*=\s*)(\d+)(\s*(#.*)?)$", re.MULTILINE)
+        def _repl(m: re.Match) -> str:
+            return f"{m.group(1)}{int(new_hours)}{m.group(3)}"
+        new_content, n_sub = pattern.subn(_repl, content)
+
+        if n_sub == 0:
+            # Append new assignment if not present
             new_content = content.rstrip() + f"\nRELOAD_CACHE_EVERY = {int(new_hours)}  # in hours\n"
+
         with open(cfg_path, 'w', encoding='utf-8') as f:
             f.write(new_content)
         logger.info(f"RELOAD_CACHE_EVERY persisted to config.py: {int(new_hours)}h")
