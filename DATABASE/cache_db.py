@@ -10,11 +10,7 @@ from HELPERS.app_instance import get_app
 from HELPERS.logger import logger, send_to_user, send_to_logger
 from HELPERS.safe_messeger import fake_message
 from DATABASE.firebase_init import db
-from URL_PARSERS.normalizer import normalize_url_for_cache, strip_range_from_url
-from URL_PARSERS.youtube import is_youtube_url, youtube_to_short_url, youtube_to_long_url
-from URL_PARSERS.playlist_utils import is_playlist_with_range
-# NOTE: Avoid importing COMMANDS at module import time to prevent circular imports.
-# Functions from COMMANDS.subtitles_cmd will be imported lazily inside save_to_video_cache()
+# NOTE: To avoid circular imports during module load, import URL_PARSERS modules lazily inside functions.
 from HELPERS.qualifier import ceil_to_popular
 from DATABASE.firebase_init import db_child_by_path
 from DATABASE.download_firebase import download_firebase_dump
@@ -345,6 +341,9 @@ def auto_cache_command(app, message):
 # Added playlist caching - separate functions for saving and retrieving playlist cache
 def save_to_playlist_cache(playlist_url: str, quality_key: str, video_indices: list, message_ids: list,
                            clear: bool = False, original_text: str = None):
+    # Lazy imports to avoid circular imports
+    from URL_PARSERS.normalizer import normalize_url_for_cache, strip_range_from_url
+    from URL_PARSERS.youtube import is_youtube_url, youtube_to_short_url, youtube_to_long_url
     logger.info(
         f"save_to_playlist_cache called: playlist_url={playlist_url}, quality_key={quality_key}, video_indices={video_indices}, message_ids={message_ids}, clear={clear}")
     
@@ -401,6 +400,8 @@ def save_to_playlist_cache(playlist_url: str, quality_key: str, video_indices: l
         
 
 def get_cached_playlist_videos(playlist_url: str, quality_key: str, requested_indices: list) -> dict:
+    from URL_PARSERS.normalizer import normalize_url_for_cache, strip_range_from_url
+    from URL_PARSERS.youtube import is_youtube_url, youtube_to_short_url, youtube_to_long_url
     logger.info(
         f"get_cached_playlist_videos called: playlist_url={playlist_url}, quality_key={quality_key}, requested_indices={requested_indices}")
     if not quality_key:
@@ -459,6 +460,7 @@ def get_cached_playlist_videos(playlist_url: str, quality_key: str, requested_in
 
 def get_cached_playlist_qualities(playlist_url: str) -> set:
     """Gets all available qualities for a cached playlist."""
+    from URL_PARSERS.normalizer import normalize_url_for_cache, strip_range_from_url
     try:
         url_hash = get_url_hash(normalize_url_for_cache(strip_range_from_url(playlist_url)))
         data = get_from_local_cache(["bot", "video_cache", "playlists", url_hash])
@@ -477,6 +479,7 @@ def is_any_playlist_index_cached(playlist_url, quality_key, indices):
 
 def get_cached_qualities(url: str) -> set:
     """He gets all the castle qualities for the URL."""
+    from URL_PARSERS.normalizer import normalize_url_for_cache
     try:
         url_hash = get_url_hash(normalize_url_for_cache(url))
         
@@ -499,6 +502,8 @@ def get_cached_playlist_count(playlist_url: str, quality_key: str, indices: list
     If a list of indices is passed, it only counts their intersection with the cache.
     For large ranges (>100), it uses a fast count.
     """
+    from URL_PARSERS.normalizer import normalize_url_for_cache, strip_range_from_url
+    from URL_PARSERS.youtube import is_youtube_url, youtube_to_short_url, youtube_to_long_url
     try:
         urls = [normalize_url_for_cache(strip_range_from_url(playlist_url))]
         if is_youtube_url(playlist_url):
@@ -573,6 +578,9 @@ def get_url_hash(url: str) -> str:
 
 def save_to_video_cache(url: str, quality_key: str, message_ids: list, clear: bool = False, original_text: str = None, user_id: int = None):
     """Saves message IDs to Firebase video cache after checking local cache to avoid duplication."""
+    from URL_PARSERS.normalizer import normalize_url_for_cache
+    from URL_PARSERS.youtube import is_youtube_url, youtube_to_short_url, youtube_to_long_url
+    from URL_PARSERS.playlist_utils import is_playlist_with_range
     found_type = None
     if user_id is not None:
         # Lazy import to avoid circular imports at module level
@@ -652,6 +660,8 @@ def save_to_video_cache(url: str, quality_key: str, message_ids: list, clear: bo
 
 def get_cached_message_ids(url: str, quality_key: str) -> list:
     """Searches cache for both versions of YouTube link (long/short)."""
+    from URL_PARSERS.normalizer import normalize_url_for_cache
+    from URL_PARSERS.youtube import is_youtube_url, youtube_to_short_url, youtube_to_long_url
     logger.info(f"get_cached_message_ids called: url={url}, quality_key={quality_key}")
     if not quality_key:
         logger.warning(f"get_cached_message_ids: quality_key is empty for URL: {url}")
