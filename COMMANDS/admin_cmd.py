@@ -10,12 +10,12 @@ import math
 import time
 import os
 import re
-from DATABASE.cache_db import reload_firebase_cache, get_from_local_cache
+# from DATABASE.cache_db import reload_firebase_cache, get_from_local_cache  # moved to lazy imports
 from DATABASE.firebase_init import db
 from URL_PARSERS.youtube import is_youtube_url, youtube_to_short_url, youtube_to_long_url
 from URL_PARSERS.normalizer import normalize_url_for_cache, get_clean_playlist_url
 from HELPERS.limitter import TimeFormatter
-from DATABASE.cache_db import get_url_hash, db_child_by_path
+# from DATABASE.cache_db import get_url_hash, db_child_by_path  # moved to lazy imports
 from HELPERS.logger import logger
 
 # Global variable for bot start time
@@ -31,7 +31,7 @@ def reload_firebase_cache_command(app, message):
         send_to_user(message, "❌ Access denied. Admin only.")
         return
     try:
-        # 1. First, start download_firebase.py along the way from the confusion
+        # 1) Download fresh dump via external script path
         script_path = getattr(Config, "DOWNLOAD_FIREBASE_SCRIPT_PATH", "download_firebase.py")
         send_to_user(message, f"⏳ Downloading fresh Firebase dump using {script_path} ...")
         result = subprocess.run([sys.executable, script_path], capture_output=True, text=True, encoding='utf-8', errors='replace')
@@ -39,8 +39,9 @@ def reload_firebase_cache_command(app, message):
             send_to_user(message, f"❌ Error running {script_path}:\n{result.stdout}\n{result.stderr}")
             send_to_logger(message, f"Error running {script_path}: {result.stdout}\n{result.stderr}")
             return
-        # 2. Now load the cache
-        success = reload_firebase_cache()
+        # 2) Reload local cache into memory
+        from DATABASE.cache_db import reload_firebase_cache as _reload_local
+        success = _reload_local()
         if success:
             send_to_user(message, "✅ Firebase cache reloaded successfully!")
             send_to_logger(message, "Firebase cache reloaded by admin.")
@@ -114,6 +115,8 @@ def send_promo_message(app, message):
 # Getting the User Logs
 
 def get_user_log(app, message):
+    # Lazy import to avoid cycles
+    from DATABASE.cache_db import get_from_local_cache
     user_id = str(message.chat.id)
     if int(message.chat.id) in Config.ADMIN and Config.GET_USER_LOGS_COMMAND in message.text:
         user_id = message.text.split(Config.GET_USER_LOGS_COMMAND + " ")[1]
@@ -154,6 +157,8 @@ def get_user_log(app, message):
 # Get All Kinds of Users (Users/ Blocked/ Unblocked)
 
 def get_user_details(app, message):
+    # Lazy import
+    from DATABASE.cache_db import get_from_local_cache
     command = message.text.split(Config.GET_USER_DETAILS_COMMAND)[1].strip()
     path_map = {
         "_blocked": "blocked_users",
@@ -165,7 +170,6 @@ def get_user_details(app, message):
         send_to_all(message, "❌ Invalid command")
         return
 
-    # data_dict = get_from_local_cache([Config.BOT_DB_PATH, path])
     data_dict = get_from_local_cache(["bot", "tgytdlp_bot", path])
     if not data_dict:
         send_to_all(message, f"❌ No data found in cache for <code>{path}</code>")
@@ -267,6 +271,10 @@ def uncache_command(app, message):
     Admin command to clear cache for a specific URL
     Usage: /uncache <URL>
     """
+    # Lazy imports to avoid cycles
+    from DATABASE.cache_db import get_url_hash
+    from DATABASE.firebase_init import db_child_by_path
+
     user_id = message.chat.id
     text = message.text.strip()
     if len(text.split()) < 2:
@@ -293,7 +301,6 @@ def uncache_command(app, message):
             db_child_by_path(db, playlist_cache_path).remove()
             removed_any = True
             # If there is a range (eg *1*5), clear the cache for each index
-            import re
             m = re.search(r"\*(\d+)\*(\d+)", url)
             if m:
                 start, end = int(m.group(1)), int(m.group(2))
