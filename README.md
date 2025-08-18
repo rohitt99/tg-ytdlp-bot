@@ -57,7 +57,7 @@ sudo apt install git python3.10 python3-pip python3.10-venv
 #### Setting up `config.py`
 ```sh
 git clone https://github.com/upekshaip/tg-ytdlp-bot.git
-cd tg-ytdlp-bot
+cd tg-ytdlp-bot/CONFIG
 sudo mv _config.py config.py
 nano config.py
 ```
