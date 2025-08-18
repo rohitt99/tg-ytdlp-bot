@@ -2,6 +2,7 @@ import os
 import json
 import time
 import threading
+import re
 from datetime import datetime, timedelta
 from urllib.parse import urlparse
 from CONFIG.config import Config
@@ -15,6 +16,7 @@ from URL_PARSERS.playlist_utils import is_playlist_with_range
 from COMMANDS.subtitles_cmd import check_subs_availability, is_subs_enabled, get_user_subs_auto_mode
 from HELPERS.qualifier import ceil_to_popular
 from DATABASE.firebase_init import db_child_by_path
+from DATABASE.download_firebase import download_firebase_dump
 
 # Get app instance
 app = get_app()
@@ -22,9 +24,11 @@ app = get_app()
 # Global variable for local cache Firebase
 firebase_cache = {}
 
-# Global variable to monitor the state of automatic loading cache
+# Auto-reload flags and state
 auto_cache_enabled = getattr(Config, 'AUTO_CACHE_RELOAD_ENABLED', True)
 auto_cache_thread = None
+reload_interval_hours = getattr(Config, 'RELOAD_CACHE_EVERY', 4)
+_thread_lock = threading.RLock()
 
 ###################################################
 
@@ -68,75 +72,152 @@ def get_next_reload_time(interval_hours: int) -> datetime:
     aligned according to the N-hour step from 00:00.
     """
     now = datetime.now()
-    # Today's border is “midnight”
     midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
     seconds_since_midnight = (now - midnight).total_seconds()
-    interval_seconds = interval_hours * 3600
-    # How many full intervals have already passed since midnight
+    interval_seconds = max(1, interval_hours) * 3600
     intervals_passed = int(seconds_since_midnight // interval_seconds)
-    # Next = midnight + (intervals_passed + 1) * step
     return midnight + timedelta(seconds=(intervals_passed + 1) * interval_seconds)
 
+def _download_and_reload_cache() -> bool:
+    """Download dump via REST and reload local JSON into memory."""
+    try:
+        ok = download_firebase_dump()
+        if not ok:
+            print("❌ Failed to download Firebase dump via REST")
+            return False
+        return reload_firebase_cache()
+    except Exception as e:
+        print(f"❌ Error in _download_and_reload_cache: {e}")
+        return False
+
 def auto_reload_firebase_cache():
-    """A stream that every n clock restarts a local cache."""
+    """Background thread that reloads local cache every N hours by downloading dump first."""
     global auto_cache_enabled
 
-    interval_hours = getattr(Config, 'RELOAD_CACHE_EVERY', 4)
     while auto_cache_enabled:
-        next_exec = get_next_reload_time(interval_hours)
+        interval_hours_local = max(1, int(reload_interval_hours))
+        next_exec = get_next_reload_time(interval_hours_local)
         now = datetime.now()
         wait_seconds = (next_exec - now).total_seconds()
+        if wait_seconds < 0:
+            wait_seconds = 0
         print(
             f"⏳ Waiting until {next_exec.strftime('%Y-%m-%d %H:%M:%S')} "
-            f"to reload Firebase cache ({wait_seconds/3600:.2f} hours)"
+            f"to refresh Firebase cache (every {interval_hours_local}h; wait {wait_seconds/3600:.2f}h)"
         )
-        # "Smart" Sleep
+        # Smart sleep with 1-second granularity, allowing dynamic interval changes or stop
         end_time = time.time() + wait_seconds
         while auto_cache_enabled and time.time() < end_time:
             time.sleep(min(1, end_time - time.time()))
+            # If interval changed dynamically, break early to recalc next_exec
+            if interval_hours_local != max(1, int(reload_interval_hours)):
+                break
         if not auto_cache_enabled:
             print("🛑 Auto Firebase cache reloader stopped by admin")
             return
-        # Run the reboot
+        if interval_hours_local != max(1, int(reload_interval_hours)):
+            # Interval changed; recompute loop without running job
+            continue
+        # Run the refresh
         try:
-            user_id = (
-                Config.ADMIN[0]
-                if isinstance(Config.ADMIN, (list, tuple))
-                else Config.ADMIN
-            )
-            print(f"🔄 Triggering /reload_cache as admin (user_id={user_id})")
-            # Just reload the cache directly
-            success = reload_firebase_cache()
+            print("🔄 Downloading and reloading Firebase cache dump...")
+            success = _download_and_reload_cache()
             if success:
-                print("✅ Firebase cache reloaded successfully!")
+                print("✅ Firebase cache refreshed successfully!")
             else:
-                print("❌ Failed to reload Firebase cache")
+                print("❌ Firebase cache refresh failed")
         except Exception as e:
-            print(f"❌ Error running auto reload_cache: {e}")
+            print(f"❌ Error running auto refresh: {e}")
             import traceback; traceback.print_exc()
 
 def start_auto_cache_reloader():
-    """The flow of auto -outload starts."""
+    """Start the auto-reload background thread (idempotent)."""
     global auto_cache_thread, auto_cache_enabled
-    if auto_cache_enabled and auto_cache_thread is None:
-        auto_cache_thread = threading.Thread(
-            target=auto_reload_firebase_cache,
-            daemon=True
-        )
-        auto_cache_thread.start()
-        print(
-            f"🚀 Auto Firebase cache reloader started "
-            f"(every {getattr(Config, 'RELOAD_CACHE_EVERY', 4)}h from 00:00)"
-        )
+    with _thread_lock:
+        if auto_cache_enabled and (auto_cache_thread is None or not auto_cache_thread.is_alive()):
+            auto_cache_thread = threading.Thread(
+                target=auto_reload_firebase_cache,
+                daemon=True
+            )
+            auto_cache_thread.start()
+            print(
+                f"🚀 Auto Firebase cache reloader started "
+                f"(every {max(1, int(reload_interval_hours))}h from 00:00)"
+            )
     return auto_cache_thread
 
 def stop_auto_cache_reloader():
-    """Stops the flow of auto -transshipment."""
+    """Stop the auto-reload background thread."""
     global auto_cache_enabled, auto_cache_thread
-    auto_cache_enabled = False
-    if auto_cache_thread and auto_cache_thread.is_alive():
-        print("🛑 Auto Firebase cache reloader stopped")
-    auto_cache_thread = None
+    with _thread_lock:
+        auto_cache_enabled = False
+        if auto_cache_thread and auto_cache_thread.is_alive():
+            print("🛑 Auto Firebase cache reloader stopping...")
+        auto_cache_thread = None
+
+def set_auto_cache_enabled(enabled: bool):
+    """Enable/disable auto cache reloader safely."""
+    global auto_cache_enabled
+    with _thread_lock:
+        auto_cache_enabled = bool(enabled)
+        if auto_cache_enabled:
+            start_auto_cache_reloader()
+        else:
+            stop_auto_cache_reloader()
+
+def _persist_reload_interval_in_config(new_hours: int) -> bool:
+    """Write RELOAD_CACHE_EVERY = <new_hours> back to CONFIG/config.py.
+    Keeps formatting/comments around the assignment line intact where possible.
+    """
+    try:
+        cfg_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'CONFIG', 'config.py')
+        if not os.path.exists(cfg_path):
+            logger.warning(f"config.py not found at {cfg_path}")
+            return False
+        with open(cfg_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        # Regex to find RELOAD_CACHE_EVERY assignment (int)
+        pattern = r"^(\s*RELOAD_CACHE_EVERY\s*=\s*)(\d+)(\s*(#.*)?)$"
+        new_content = re.sub(pattern, rf"\\g<1>{int(new_hours)}\\g<3>", content, flags=re.MULTILINE)
+        if new_content == content:
+            # If not found, append a new line at the end
+            new_content = content.rstrip() + f"\nRELOAD_CACHE_EVERY = {int(new_hours)}  # in hours\n"
+        with open(cfg_path, 'w', encoding='utf-8') as f:
+            f.write(new_content)
+        logger.info(f"RELOAD_CACHE_EVERY persisted to config.py: {int(new_hours)}h")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to persist RELOAD_CACHE_EVERY to config.py: {e}")
+        return False
+
+def set_reload_interval_hours(new_hours: int) -> bool:
+    """Set a new reload interval in hours (1..168). Restarts the reloader if needed and persists to config.py."""
+    global reload_interval_hours
+    try:
+        new_val = int(new_hours)
+    except Exception:
+        return False
+    if new_val < 1 or new_val > 168:
+        return False
+    with _thread_lock:
+        reload_interval_hours = new_val
+        # Update in-memory Config for consistency
+        try:
+            setattr(Config, 'RELOAD_CACHE_EVERY', new_val)
+        except Exception:
+            pass
+        # Persist to CONFIG/config.py
+        _persist_reload_interval_in_config(new_val)
+        # Restart thread if running so new interval applies immediately
+        running = auto_cache_enabled
+        if running:
+            stop_auto_cache_reloader()
+            # preserve enabled state and start again
+            auto_cache_enabled_flag = True
+            # set enabled back to True and start
+            globals()['auto_cache_enabled'] = True
+            start_auto_cache_reloader()
+    return True
 
 def close_all_firebase_connections():
     """Close all Firebase connections to prevent file descriptor leaks"""
@@ -149,75 +230,116 @@ def close_all_firebase_connections():
         print(f"❌ Error closing Firebase connections: {e}")
 
 def toggle_auto_cache_reloader():
-    """Switchs the transload mode."""
+    """Toggle auto-reload mode, returns new state (True/False)."""
     global auto_cache_enabled
-    auto_cache_enabled = not auto_cache_enabled
-    if auto_cache_enabled:
-        start_auto_cache_reloader()
-    else:
-        stop_auto_cache_reloader()
-    return auto_cache_enabled
+    with _thread_lock:
+        auto_cache_enabled = not auto_cache_enabled
+        if auto_cache_enabled:
+            start_auto_cache_reloader()
+        else:
+            stop_auto_cache_reloader()
+        return auto_cache_enabled
 
-# We load the cache when importing module
+# Load cache on module import
 load_firebase_cache()
 
-def get_from_local_cache(path_parts):
-    """
-    Receives data from a local cache along the way, divided into parts
-    For example: get_from_local_cache (['Bot', 'Video_cache', 'Hash123', '720p'])
-    """
-    global firebase_cache
-    current = firebase_cache
-    for part in path_parts:
-        if isinstance(current, dict) and part in current:
-            current = current[part]
-        else:
-            log_firebase_access_attempt(path_parts, success=False)
-            return None
-    
-    log_firebase_access_attempt(path_parts, success=True)
-    return current
-
-def log_firebase_access_attempt(path_parts, success=True):
-    """
-    Logs attempts to turn to a local cache (to track the remaining .get () calls)
-    """
-    # Show the path in JSON format for local cache
-    path_str = ' -> '.join(path_parts)  # For example: "bot -> video_cache -> playlists -> url_hash -> quality"
-    status = "SUCCESS" if success else "MISS"
-    print(f"🔥 Firebase access attempt: {path_str} -> {status}")
-
-###################################################
+# ================= /auto_cache command =================
 
 def auto_cache_command(app, message):
-    """Command handler to control the automatic loading of the Firebase cache."""
-    if int(message.chat.id) not in Config.ADMIN:
-        send_to_user(message, "❌ Access denied. Admin only.")
-        return
+    """Command handler to control automatic Firebase cache loading.
 
-    new_state = toggle_auto_cache_reloader()
-    interval = getattr(Config, 'RELOAD_CACHE_EVERY', 4)
+    Supports:
+      /auto_cache on
+      /auto_cache off
+      /auto_cache N   (N in 1..168 hours)
+    """
+    try:
+        if int(message.chat.id) not in Config.ADMIN:
+            send_to_user(message, "❌ Access denied. Admin only.")
+            return
 
-    if new_state:
-        next_exec = get_next_reload_time(interval)
-        delta_min = int((next_exec - datetime.now()).total_seconds() // 60)
-        send_to_user(
-            message,
-            "🔄 Auto Firebase cache reloading started!\n\n"
-            f"📊 Status: ✅ ENABLED\n"
-            f"⏰ Schedule: every {interval} hours from 00:00\n"
-            f"🕒 Next reload: {next_exec.strftime('%H:%M')} (in {delta_min} minutes)"
-        )
-        send_to_logger(message, f"Auto reload started; next at {next_exec}")
-    else:
-        send_to_user(
-            message,
-            "🛑 Auto Firebase cache reloading stopped!\n\n"
-            "📊 Status: ❌ DISABLED\n"
-            "💡 Use /auto_cache again to re-enable"
-        )
-        send_to_logger(message, "Auto reload stopped by admin.")
-   
+        text = (message.text or "").strip()
+        parts = text.split()
+        arg = parts[1].lower() if len(parts) > 1 else None
+
+        if arg in ("on", "off"):
+            enable = arg == "on"
+            set_auto_cache_enabled(enable)
+            status = "✅ ENABLED" if enable else "❌ DISABLED"
+            if enable:
+                interval = max(1, int(reload_interval_hours))
+                next_exec = get_next_reload_time(interval)
+                delta_min = int((next_exec - datetime.now()).total_seconds() // 60)
+                send_to_user(
+                    message,
+                    "🔄 Auto Firebase cache reloading updated!\n\n"
+                    f"📊 Status: {status}\n"
+                    f"⏰ Schedule: every {interval} hours from 00:00\n"
+                    f"🕒 Next reload: {next_exec.strftime('%H:%M')} (in {delta_min} minutes)"
+                )
+                send_to_logger(message, f"Auto reload ENABLED; next at {next_exec}")
+            else:
+                send_to_user(
+                    message,
+                    "🛑 Auto Firebase cache reloading stopped!\n\n"
+                    "📊 Status: ❌ DISABLED\n"
+                    "💡 Use /auto_cache on to re-enable"
+                )
+                send_to_logger(message, "Auto reload DISABLED by admin.")
+            return
+
+        # Try numeric interval
+        if arg is not None:
+            try:
+                n = int(arg)
+            except Exception:
+                send_to_user(message, "❌ Invalid argument. Use /auto_cache on | off | N (1..168)")
+                return
+            if n < 1 or n > 168:
+                send_to_user(message, "❌ Interval must be between 1 and 168 hours")
+                return
+            ok = set_reload_interval_hours(n)
+            if not ok:
+                send_to_user(message, "❌ Failed to set interval")
+                return
+            interval = max(1, int(reload_interval_hours))
+            next_exec = get_next_reload_time(interval)
+            delta_min = int((next_exec - datetime.now()).total_seconds() // 60)
+            send_to_user(
+                message,
+                "⏱️ Auto Firebase cache interval updated!\n\n"
+                f"📊 Status: {'✅ ENABLED' if auto_cache_enabled else '❌ DISABLED'}\n"
+                f"⏰ Schedule: every {interval} hours from 00:00\n"
+                f"🕒 Next reload: {next_exec.strftime('%H:%M')} (in {delta_min} minutes)"
+            )
+            send_to_logger(message, f"Auto reload interval set to {interval}h; next at {next_exec}")
+            return
+
+        # No args: toggle legacy behavior
+        new_state = toggle_auto_cache_reloader()
+        interval = max(1, int(reload_interval_hours))
+        if new_state:
+            next_exec = get_next_reload_time(interval)
+            delta_min = int((next_exec - datetime.now()).total_seconds() // 60)
+            send_to_user(
+                message,
+                "🔄 Auto Firebase cache reloading started!\n\n"
+                f"📊 Status: ✅ ENABLED\n"
+                f"⏰ Schedule: every {interval} hours from 00:00\n"
+                f"🕒 Next reload: {next_exec.strftime('%H:%M')} (in {delta_min} minutes)"
+            )
+            send_to_logger(message, f"Auto reload started; next at {next_exec}")
+        else:
+            send_to_user(
+                message,
+                "🛑 Auto Firebase cache reloading stopped!\n\n"
+                "📊 Status: ❌ DISABLED\n"
+                "💡 Use /auto_cache on to re-enable"
+            )
+            send_to_logger(message, "Auto reload stopped by admin.")
+    except Exception as e:
+        logger.error(f"/auto_cache handler error: {e}")
+
 
 # Added playlist caching - separate functions for saving and retrieving playlist cache
 def save_to_playlist_cache(playlist_url: str, quality_key: str, video_indices: list, message_ids: list,
