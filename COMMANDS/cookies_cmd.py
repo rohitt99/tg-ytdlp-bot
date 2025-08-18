@@ -14,6 +14,8 @@ import subprocess
 import os
 import requests
 import re
+from requests import Session
+from requests.adapters import HTTPAdapter
 
 # Get app instance for decorators
 app = get_app()
@@ -297,47 +299,85 @@ Cookie files will be saved as cookie.txt in your folder.
 
 
 
+def _sanitize_error_detail(detail: str, url: str) -> str:
+    try:
+        return (detail or "").replace(url or "", "<hidden-url>")
+    except Exception:
+        return "<hidden>"
+
+def _download_content(url: str, timeout: int = 30):
+    """Download binary content using a short-lived Session with small pool and Connection: close.
+    Returns (ok: bool, status_code: int|None, content: bytes|None, error: str|None)
+    """
+    if not url:
+        return False, None, None, "empty-url"
+    sess = Session()
+    try:
+        sess.headers.update({'User-Agent': 'tg-ytdlp-bot/1.0', 'Connection': 'close'})
+        adapter = HTTPAdapter(pool_connections=2, pool_maxsize=4, max_retries=2, pool_block=False)
+        sess.mount('http://', adapter)
+        sess.mount('https://', adapter)
+        resp = sess.get(url, timeout=timeout)
+        status = resp.status_code
+        if status == 200:
+            data = resp.content
+            resp.close()
+            return True, status, data, None
+        else:
+            resp.close()
+            return False, status, None, f"http-status-{status}"
+    except requests.exceptions.RequestException as e:
+        return False, None, None, f"{type(e).__name__}: {e}"
+    finally:
+        try:
+            sess.close()
+        except Exception:
+            pass
+
 def download_and_save_cookie(app, callback_query, url, service):
     user_id = str(callback_query.from_user.id)
-    
-    # Check if URL is not empty
+
+    # Validate config
     if not url:
-        send_to_user(callback_query.message, f"❌ {service.capitalize()} Cookie URL is not configured!")
-        send_to_logger(callback_query.message, f"{service.capitalize()} Cookie URL not configured for user {user_id}.")
+        send_to_user(callback_query.message, f"❌ {service.capitalize()} cookie source is not configured!")
+        send_to_logger(callback_query.message, f"{service.capitalize()} cookie URL is empty for user {user_id}.")
         return
-    
+
     try:
-        response = requests.get(url, timeout=30)
-        if response.status_code == 200:
-            # Check if the file extension is .txt
+        ok, status, content, err = _download_content(url, timeout=30)
+        if ok:
+            # Optional: validate extension (do not expose URL); keep internal check
             if not url.lower().endswith('.txt'):
-                send_to_user(callback_query.message, f"❌ {service.capitalize()} Cookie URL must point to a .txt file!")
-                send_to_logger(callback_query.message, f"{service.capitalize()} Cookie URL is not a .txt file for user {user_id}.")
+                send_to_user(callback_query.message, f"❌ {service.capitalize()} cookie source must be a .txt file!")
+                send_to_logger(callback_query.message, f"{service.capitalize()} cookie URL is not .txt (hidden)")
                 return
-            
-            # Check the file size (maximum 100KB)
-            content_size = len(response.content)
-            if content_size > 100 * 1024:  # 100KB in bytes
-                send_to_user(callback_query.message, f"❌ {service.capitalize()} Cookie file is too large! Maximum size is 100KB, got {content_size // 1024}KB.")
-                send_to_logger(callback_query.message, f"{service.capitalize()} Cookie file too large ({content_size} bytes) for user {user_id}.")
+            # size check (max 100KB)
+            content_size = len(content or b"")
+            if content_size > 100 * 1024:
+                send_to_user(callback_query.message, f"❌ {service.capitalize()} cookie file is too large! Max 100KB, got {content_size // 1024}KB.")
+                send_to_logger(callback_query.message, f"{service.capitalize()} cookie file too large: {content_size} bytes (source hidden)")
                 return
-            
-            # Save the file in the user's folder as cookie.txt
+            # Save to user folder
             user_dir = os.path.join("users", user_id)
             create_directory(user_dir)
             cookie_filename = os.path.basename(Config.COOKIE_FILE_PATH)
             file_path = os.path.join(user_dir, cookie_filename)
             with open(file_path, "wb") as cf:
-                cf.write(response.content)
-                
+                cf.write(content)
             send_to_user(callback_query.message, f"<b>✅ {service.capitalize()} cookie file downloaded and saved as cookie.txt in your folder.</b>")
-            send_to_logger(callback_query.message, f"{service.capitalize()} cookie file downloaded for user {user_id}.")
+            send_to_logger(callback_query.message, f"{service.capitalize()} cookie file downloaded for user {user_id} (source hidden).")
         else:
-            send_to_user(callback_query.message, f"❌ {service.capitalize()} Cookie URL is not available! (Status: {response.status_code})")
-            send_to_logger(callback_query.message, f"Failed to download {service.capitalize()} cookie file for user {user_id}. Status: {response.status_code}")
-    except requests.exceptions.RequestException as e:
-        send_to_user(callback_query.message, f"❌ Error downloading {service.capitalize()} cookie file: {str(e)}")
-        send_to_logger(callback_query.message, f"Error downloading {service.capitalize()} cookie file for user {user_id}: {str(e)}")
+            # Do not leak URL in user-facing errors
+            if status is not None:
+                send_to_user(callback_query.message, f"❌ {service.capitalize()} cookie source is unavailable (status {status}). Please try again later.")
+                send_to_logger(callback_query.message, f"Failed to download {service.capitalize()} cookie: status={status} (url hidden)")
+            else:
+                send_to_user(callback_query.message, f"❌ Error downloading {service.capitalize()} cookie file. Please try again later.")
+                safe_err = _sanitize_error_detail(err or "", url)
+                send_to_logger(callback_query.message, f"Error downloading {service.capitalize()} cookie: {safe_err} (url hidden)")
+    except Exception as e:
+        send_to_user(callback_query.message, f"❌ Error downloading {service.capitalize()} cookie file. Please try again later.")
+        send_to_logger(callback_query.message, f"Unexpected error while downloading {service.capitalize()} cookie (url hidden): {type(e).__name__}: {e}")
 
 # Updating The Cookie File.
 # @reply_with_keyboard
