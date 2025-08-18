@@ -1,45 +1,45 @@
 #!/bin/bash
 
-# Скрипт для обновления кода из GitHub репозитория
-# Запускать в папке с ботом (где лежит magic.py)
+# Updater script for tg-ytdlp-bot
+# Run from the bot folder (where magic.py is located)
 
-echo "🚀 Скрипт обновления tg-ytdlp-bot"
+echo "🚀 tg-ytdlp-bot updater"
 echo "=================================="
 
-# Проверяем, что мы в правильной директории
+# Sanity check: correct working directory
 if [ ! -f "magic.py" ]; then
-    echo "❌ Ошибка: файл magic.py не найден"
-    echo "Убедитесь, что скрипт запущен в папке с ботом"
+    echo "❌ Error: magic.py not found"
+    echo "Make sure you run this script from the bot folder"
     exit 1
 fi
 
-# Проверяем наличие Python
+# Check Python
 if ! command -v python3 &> /dev/null; then
-    echo "❌ Ошибка: python3 не найден"
+    echo "❌ Error: python3 not found"
     exit 1
 fi
 
-# Проверяем наличие Git
+# Check Git
 if ! command -v git &> /dev/null; then
-    echo "❌ Ошибка: git не найден"
-    echo "Установите Git для работы скрипта:"
+    echo "❌ Error: git not found"
+    echo "Install Git to use this updater:"
     echo "  Ubuntu/Debian: sudo apt install git"
-    echo "  CentOS/RHEL: sudo yum install git"
+    echo "  CentOS/RHEL:   sudo yum install git"
     exit 1
 fi
 
-# Запускаем обновление
-echo "📥 Запуск обновления..."
+# Run update
+echo "📥 Starting update..."
 python3 update_from_repo.py
 update_status=$?
 
-# Проверяем результат
+# Final status
 if [ $update_status -eq 0 ]; then
     echo ""
-    echo "✅ Обновление завершено успешно!"
-    echo "🔄 Рекомендуется перезапустить бота"
+    echo "✅ Update completed successfully!"
+    echo "🔄 It's recommended to restart the bot"
 else
     echo ""
-    echo "❌ Обновление завершено с ошибками"
-    echo "Проверьте логи выше"
+    echo "❌ Update finished with errors"
+    echo "Please check the logs above"
 fi
