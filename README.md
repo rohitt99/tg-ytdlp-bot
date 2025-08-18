@@ -51,7 +51,7 @@ For local deployment you should use this commands:
 #### Install `git` and `python3` (example for Ubuntu/Debian)
 ```sh
 sudo apt update
-sudo apt install mediainfo
+sudo apt install mediainfo rsync
 sudo apt install git python3.10 python3-pip python3.10-venv
 ```
 #### Setting up `config.py`
