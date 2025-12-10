@@ -14,32 +14,32 @@ class Config(object):
     # IMPORTANT (REQUIRED) SETTINGS - start filling settings here
     #######################################################        
     # Your bot name - Required (str)
-    BOT_NAME = "tgytdlp_test_bot"
+    BOT_NAME = "🌺𝗬𝗧•𝗗𝗢𝗪𝗡𝗟𝗢𝗔𝗗𝗘𝗥🌹"
     # A name for users - Required (str)
-    BOT_NAME_FOR_USERS = "tgytdlp_bot" #name in database
+    BOT_NAME_FOR_USERS = "🌺𝗬𝗧•𝗗𝗢𝗪𝗡𝗟𝗢𝗔𝗗𝗘𝗥🌹" #name in database
     # List of administrator IDs
-    ADMIN = [00000000, 111111111111]
+    ADMIN = [7960928753, 111111111111]
     # Add allowed group IDs - Only these groups will be served by the bot
     ALLOWED_GROUP = [-100111111111111, -1002222222222222]
     # API ID Telegram
-    API_ID = 00000000000000
+    API_ID = 25830228
     # API HASH Telegram
-    API_HASH = "abc0000000000000000000"
+    API_HASH = "a23a5133bddbdab87df3df06ccf63a89"
     # Bot token
-    BOT_TOKEN = "00000000000:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    BOT_TOKEN = "7350436755:AAG5dNzaCxzuu4thcQoaSb9gq92YbaKzurM"
     # Mini-app URL
     MINIAPP_URL = "https://t.me/tgytdlp_test_bot/?startapp"
     # Channel ID for logs (you can use the same 1 channel ID for all LOGS)
-    LOGS_ID = -100111111111111  # Channel ID for logs
-    LOGS_VIDEO_ID = -100111111111111  # Channel ID for video logs
-    LOGS_NSFW_ID = -100111111111111  # Channel ID for video logs with NSWF tags
-    LOGS_IMG_ID = -100111111111111  # Channel ID for media command logs /img 
-    LOGS_PAID_ID = -100111111111111  # Channel ID for paid media logs
-    LOG_EXCEPTION = -100111111111111  # Channel ID for exception logs
+    LOGS_ID = -1002305798928  # Channel ID for logs
+    LOGS_VIDEO_ID = -1002305798928  # Channel ID for video logs
+    LOGS_NSFW_ID = -1002305798928  # Channel ID for video logs with NSWF tags
+    LOGS_IMG_ID = -1002305798928  # Channel ID for media command logs /img 
+    LOGS_PAID_ID = -1002305798928  # Channel ID for paid media logs
+    LOG_EXCEPTION = -1002305798928  # Channel ID for exception logs
     # Channel ID to subscribe to
-    SUBSCRIBE_CHANNEL = -100222222222222222222
+    SUBSCRIBE_CHANNEL = -1002305798928
     # Add subscription channel - Required (str)
-    SUBSCRIBE_CHANNEL_URL = "https://t.me/+abcdef"
+    SUBSCRIBE_CHANNEL_URL = "https://t.me/tera_mera_pyar_amar"
     # Session string пользователя для чтения admin logs канала (опционально)
     # Боты не могут читать admin logs, поэтому нужна пользовательская сессия
     # Для генерации session string запустите: python generate_session_string.py
