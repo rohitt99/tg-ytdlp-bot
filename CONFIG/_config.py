@@ -28,14 +28,14 @@ class Config(object):
     # Bot token
     BOT_TOKEN = "7350436755:AAG5dNzaCxzuu4thcQoaSb9gq92YbaKzurM"
     # Mini-app URL
-    MINIAPP_URL = "https://t.me/tgytdlp_test_bot/?startapp"
+    MINIAPP_URL = "https://t.me/Ytdownloaddderrrbot/?startapp"
     # Channel ID for logs (you can use the same 1 channel ID for all LOGS)
-    LOGS_ID = -1002305798928  # Channel ID for logs
-    LOGS_VIDEO_ID = -1002305798928  # Channel ID for video logs
-    LOGS_NSFW_ID = -1002305798928  # Channel ID for video logs with NSWF tags
-    LOGS_IMG_ID = -1002305798928  # Channel ID for media command logs /img 
-    LOGS_PAID_ID = -1002305798928  # Channel ID for paid media logs
-    LOG_EXCEPTION = -1002305798928  # Channel ID for exception logs
+    LOGS_ID = -1003477576748  # Channel ID for logs
+    LOGS_VIDEO_ID = -1003477576748  # Channel ID for video logs
+    LOGS_NSFW_ID = -1003477576748  # Channel ID for video logs with NSWF tags
+    LOGS_IMG_ID = -1003477576748  # Channel ID for media command logs /img 
+    LOGS_PAID_ID = -1003477576748  # Channel ID for paid media logs
+    LOG_EXCEPTION = -1003477576748  # Channel ID for exception logs
     # Channel ID to subscribe to
     SUBSCRIBE_CHANNEL = -1002305798928
     # Add subscription channel - Required (str)
@@ -57,8 +57,8 @@ class Config(object):
     IMAGE_CACHE_DB_PATH = f"bot/video_cache/images"    
     # Firebase Config - Required (str for all)
     # Firebase settings
-    FIREBASE_USER = "XXX@gmail.com"
-    FIREBASE_PASSWORD = "XXXXXXXXXXXXXXXxx"
+    FIREBASE_USER = "xyz993418@gmail.com"
+    FIREBASE_PASSWORD = "993418"
     FIREBASE_CONF = {
         "apiKey": "AIzaSyDG_6dGGRyb-DCy7Z8EyQABOWZ6nUoY6Qk",
         "authDomain": "tgbot-622f1.firebaseapp.com",
@@ -212,7 +212,7 @@ class Config(object):
     GROUP_MULTIPLIER = LimitsConfig.GROUP_MULTIPLIER
     NSFW_STAR_COST = LimitsConfig.NSFW_STAR_COST
 
-    STAR_RECEIVER = 7360853    
+    STAR_RECEIVER = 7960928753    
     # PO Token Provider configuration - these are defined above in the main config
     # No need to duplicate them here as they are already accessible
     #######################################################
