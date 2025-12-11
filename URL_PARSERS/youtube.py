@@ -77,7 +77,7 @@ def extract_youtube_id(url: str, user_id=None) -> str:
     raise ValueError(safe_get_messages(user_id).YOUTUBE_FAILED_EXTRACT_ID_MSG)
 
 
-def download_thumbnail(video_id: str, dest: str, url: str = None) -> None:
+def download_thumbnail(video_id: str, dest: str, url: str = None, user_id=None) -> None:
     """
     Downloads YouTube (Maxresdefault/Hqdefault) to the disk in the original size.
     URL - it is needed to determine Shorts by link (but now it is not used).
@@ -85,8 +85,11 @@ def download_thumbnail(video_id: str, dest: str, url: str = None) -> None:
     base = f"https://img.youtube.com/vi/{video_id}"
     img_bytes = None
     for name in ("maxresdefault.jpg", "hqdefault.jpg"):
-        r = requests.get(f"{base}/{name}", timeout=10)
-        if r.status_code == 200 and len(r.content) <= 1024 * 1024:
+        try:
+            r = requests.get(f"{base}/{name}", timeout=10)
+        except Exception:
+            r = None
+        if r and r.status_code == 200 and len(r.content) <= 1024 * 1024:
             with open(dest, "wb") as f:
                 f.write(r.content)
             img_bytes = r.content
@@ -143,25 +146,31 @@ def is_spotify_url(url: str) -> bool:
     """
     if not url:
         return False
+    url = url.strip()
     parsed = urlparse(url)
-    if 'spotify.com' in parsed.netloc:
-        # could be /track/, /album/, /playlist/ etc. We only handle /track/ (single song)
-        if parsed.path.startswith('/track/'):
+    netloc = (parsed.netloc or "").lower()
+    # open.spotify.com or play.spotify.com etc.
+    if 'spotify.com' in netloc:
+        # Handle typical track path /track/<id>
+        if parsed.path.lower().startswith('/track/'):
             return True
-        # sometimes users include query params or trailing slashes
-        if '/track/' in parsed.path:
+        if '/track/' in parsed.path.lower():
             return True
+    # spotify URI form
     if url.startswith('spotify:track:'):
         return True
     return False
 
 
 def _find_downloaded_audio(directory: str):
-    """Find most recently modified audio file in directory."""
+    """Find most recently modified audio file in directory (recursive)."""
     audio_exts = ['*.mp3', '*.m4a', '*.flac', '*.ogg', '*.wav', '*.webm', '*.aac']
     candidates = []
-    for pattern in audio_exts:
-        candidates.extend(glob.glob(os.path.join(directory, pattern)))
+    for root, _, files in os.walk(directory):
+        for file in files:
+            lower = file.lower()
+            if any(lower.endswith(ext.lstrip('*')) for ext in audio_exts):
+                candidates.append(os.path.join(root, file))
     if not candidates:
         return None
     # choose newest
@@ -175,7 +184,7 @@ def download_spotify_track(spotify_url: str, dest_dir: str, user_id=None, timeou
     Returns full path to downloaded audio file.
 
     Requirements:
-      - spotdl (CLI) must be installed and available in PATH.
+      - spotdl (CLI) must be installed and available in PATH (or accessible via python3 -m spotdl).
       - ffmpeg must be installed (spotdl uses it).
     Behavior:
       - Only proceeds if spotify_url is recognized as a Spotify track link/URI.
@@ -191,28 +200,39 @@ def download_spotify_track(spotify_url: str, dest_dir: str, user_id=None, timeou
 
     tmp_dir = tempfile.mkdtemp(prefix="spotdl_")
     try:
-        # Try modern spotdl invocation first, then fallback to legacy form.
+        # Use an explicit output template so files land inside tmp_dir with predictable names
+        # spotdl accepts templates like '%(title)s.%(ext)s'
+        output_template = os.path.join(tmp_dir, "%(title)s.%(ext)s")
+
         commands_to_try = [
-            ['spotdl', 'download', spotify_url, '--output', tmp_dir],
-            ['spotdl', spotify_url, '--output', tmp_dir],
-            ['spotdl', 'download', spotify_url, '-o', tmp_dir],
-            ['spotdl', spotify_url, '-o', tmp_dir],
+            # modern: spotdl download <url> --output <template>
+            ['spotdl', 'download', spotify_url, '--output', output_template],
+            ['spotdl', 'download', spotify_url, '-o', output_template],
+            # some older versions accept 'spotdl <url> --output ...'
+            ['spotdl', spotify_url, '--output', output_template],
+            ['spotdl', spotify_url, '-o', output_template],
+            # fallback to python -m spotdl forms
+            ['python3', '-m', 'spotdl', 'download', spotify_url, '--output', output_template],
+            ['python3', '-m', 'spotdl', spotify_url, '--output', output_template],
         ]
 
         last_exc = None
+        proc = None
         success = False
         for cmd in commands_to_try:
             try:
                 logger.info(f"Running spotdl command: {' '.join(cmd)}")
                 proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+                logger.debug(f"spotdl exit {proc.returncode}; stdout: {proc.stdout}; stderr: {proc.stderr}")
                 if proc.returncode == 0:
                     success = True
                     logger.info("spotdl reported success")
                     break
                 else:
+                    # continue trying other forms, but remember last non-zero result
+                    last_exc = RuntimeError(f"spotdl returned code {proc.returncode}. stderr: {proc.stderr.strip()}")
                     logger.warning(f"spotdl returned non-zero ({proc.returncode}). stdout: {proc.stdout} stderr: {proc.stderr}")
             except FileNotFoundError as fe:
-                # spotdl not installed / not in PATH
                 last_exc = fe
                 logger.error("spotdl executable not found in PATH")
                 break
@@ -231,17 +251,24 @@ def download_spotify_track(spotify_url: str, dest_dir: str, user_id=None, timeou
                 # Use configurable message if present, otherwise fallback
                 text = getattr(msg_obj, "SPOTDL_NOT_INSTALLED_MSG", None) or "spotdl is not installed or not found in PATH. Please install spotdl and try again."
                 raise RuntimeError(text)
-            # generic failure
+            # generic failure with stderr if available
             msg_obj = safe_get_messages(user_id)
+            stderr_text = ""
+            if proc is not None:
+                stderr_text = proc.stderr.strip()
             text = getattr(msg_obj, "SPOTIFY_FAILED_DOWNLOAD_MSG", None) or "Failed to download Spotify track via spotdl."
+            if stderr_text:
+                text = f"{text} spotdl stderr: {stderr_text}"
             raise RuntimeError(text)
 
-        # Give the filesystem a tiny moment to flush files
-        time.sleep(0.1)
-        found = _find_downloaded_audio(tmp_dir)
-        if not found:
-            # Possibly spotdl saved into nested subfolder; search recursively
-            found = None
+        # Give the filesystem a short moment to flush files and allow spotdl to write nested directories.
+        found = None
+        # Try a few times for spotdl to finish writing and rename files
+        for attempt in range(10):
+            found = _find_downloaded_audio(tmp_dir)
+            if found:
+                break
+            # recursive search as well
             for root, _, files in os.walk(tmp_dir):
                 for file in files:
                     if any(file.lower().endswith(ext) for ext in ['.mp3', '.m4a', '.flac', '.ogg', '.wav', '.webm', '.aac']):
@@ -249,10 +276,18 @@ def download_spotify_track(spotify_url: str, dest_dir: str, user_id=None, timeou
                         break
                 if found:
                     break
+            if found:
+                break
+            time.sleep(0.3)
 
         if not found:
             msg_obj = safe_get_messages(user_id)
             text = getattr(msg_obj, "SPOTIFY_FAILED_FIND_FILE_MSG", None) or "spotdl completed but no audio file was found."
+            # include last stderr if available for debugging
+            if proc is not None:
+                stderr_text = proc.stderr.strip()
+                if stderr_text:
+                    text = f"{text} Last spotdl stderr: {stderr_text}"
             raise RuntimeError(text)
 
         # Move found file into dest_dir
@@ -270,6 +305,4 @@ def download_spotify_track(spotify_url: str, dest_dir: str, user_id=None, timeou
             shutil.rmtree(tmp_dir)
         except Exception:
             logger.debug("Failed to remove temporary spotdl directory; ignoring.")
-
-
 # End of file
