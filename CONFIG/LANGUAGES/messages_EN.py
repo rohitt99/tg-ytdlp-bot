@@ -150,8 +150,8 @@ Use <code>/img URL</code> to download images/photos/albums from many platforms.
 • <code>/img 11-20 URL</code> → download specific range
 • <code>/img 11- URL</code> → download from 11th to the end
 
-👨‍💻 <i>Developer:</i> @upekshaip
-🤝 <i>Contributor:</i> @IIlIlIlIIIlllIIlIIlIllIIllIlIIIl
+👨‍💻 <i>Developer:</i> @daraggggggg
+🤝 <i>Contributor:</i> @daraggggggg
 </blockquote>
     """
     
@@ -257,12 +257,12 @@ Add my bots to your groups to get enhanced features and higher limits!
 ————————————
 💰 <b>Pricing & Setup:</b>
 <blockquote>• Price: <b>$5/month</b> per 1 bot in group
-• Setup: Contact @iilililiiillliiliililliilliliiil
+• Setup: Contact @daraggggggg
 • Payment: 💎TON or other methods💲
 • Support: Full technical support included</blockquote>
 ————————————
 You can add my bots to your group to unblock free 🔞<b>NSFW</b> and to double (x2️⃣) all limits.
-Contact me if you want me to allow your group to use my bots @iilililiiillliiliililliilliliiil
+Contact me if you want me to allow your group to use my bots @daraggggggg
 ————————————
 💡<b>TIP:</b> <blockquote>You can chip in money with any amount of your friends (for example 100 people) and made 1 purchase for whole group - ALL GROUP MEMBERS WILL HAVE FULL UNLIMITED ACCESS to all bots functions in that group for just <b>0.05$</b></blockquote>
     """
@@ -1410,7 +1410,7 @@ Use:
     # Error messages
     ERROR_CHECK_SUPPORTED_SITES_MSG = "Check <a href='https://github.com/chelaxian/tg-ytdlp-bot/wiki/YT_DLP#supported-sites'>here</a> if your site supported"
     ERROR_COOKIE_NEEDED_MSG = "You may need <code>cookie</code> for downloading this video. First, clean your workspace via <b>/clean</b> command"
-    ERROR_COOKIE_INSTRUCTIONS_MSG = "For Youtube - get <code>cookie</code> via <b>/cookie</b> command. For any other supported site - send your own cookie (<a href='https://t.me/tg_ytdlp/203'>guide1</a>) (<a href='https://t.me/tg_ytdlp/214'>guide2</a>) and after that send your video link again."
+    ERROR_COOKIE_INSTRUCTIONS_MSG = "For Youtube - get <code>cookie</code> via <b>/cookie</b> command. For any other supported site - send your own cookie (<a href='https://t.me/daraggggggg'>guide1</a>) (<a href='https://t.me/daraggggggg'>guide2</a>) and after that send your video link again."
     CHOOSE_SUBTITLE_LANGUAGE_MSG = "Choose subtitle language"
     NO_ALTERNATIVE_AUDIO_LANGUAGES_MSG = "No alternative audio languages"
     CHOOSE_AUDIO_LANGUAGE_MSG = "Choose audio language"
