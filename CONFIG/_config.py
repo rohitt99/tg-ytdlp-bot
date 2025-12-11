@@ -60,13 +60,13 @@ class Config(object):
     FIREBASE_USER = "XXX@gmail.com"
     FIREBASE_PASSWORD = "XXXXXXXXXXXXXXXxx"
     FIREBASE_CONF = {
-        "apiKey": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-        "authDomain": "XXXXXXXXXXXX.firebaseapp.com",
-        "projectId": "XXXXXXXXXX-0000000000",
-        "storageBucket": "XXXXXXXXXXXXXX-0000000000.firebasestorage.app",
-        "messagingSenderId": "0000000000000000",
-        "appId": "1:0000000000000:web:00000000000000a",
-        "databaseURL": "https://XXXXXXXXXXXXXX-000000000-default-rtdb.europe-west1.firebasedatabase.app"
+        "apiKey": "AIzaSyDG_6dGGRyb-DCy7Z8EyQABOWZ6nUoY6Qk",
+        "authDomain": "tgbot-622f1.firebaseapp.com",
+        "projectId": "tgbot-622f1",
+        "storageBucket": "tgbot-622f1.firebasestorage.app",
+        "messagingSenderId": "795842400012",
+        "appId": "1:795842400012:web:ffdd71691fef0b21698329",
+        "databaseURL": "https://tgbot-622f1-default-rtdb.firebaseio.com"
     }
     ########################################################    
     ########################################################
