@@ -26,7 +26,7 @@ class Config(object):
     # API HASH Telegram
     API_HASH = "a23a5133bddbdab87df3df06ccf63a89"
     # Bot token
-    BOT_TOKEN = "7350436755:AAGoIYO02pFQtGGB9ncIi0G3hy3SrFQxCnE"
+    BOT_TOKEN = "7350436755:AAEpoGCZXJg4TJP_VqJrnXD06qjLCLZfOTM"
     # Mini-app URL
     MINIAPP_URL = "https://t.me/Ytdownloaddderrrbot/?startapp"
     # Channel ID for logs (you can use the same 1 channel ID for all LOGS)
