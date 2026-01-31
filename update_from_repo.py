@@ -15,7 +15,7 @@ from pathlib import Path
 from datetime import datetime
 
 # Configuration
-REPO_URL = "https://github.com/chelaxian/tg-ytdlp-bot.git"
+REPO_URL = "https://github.com/rohitt99/tg-ytdlp-bot"
 # Use explicit branch
 BRANCH = "newdesign2"
 # BRANCH = "main"
