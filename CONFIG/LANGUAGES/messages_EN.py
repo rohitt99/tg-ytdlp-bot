@@ -10,7 +10,7 @@ class Messages(object):
     #######################################################
     CREDITS_MSG = "<blockquote><i>Managed by</i> @daraggggggg\n @Ytdownloaddderrrbot\n @Imperilment_bot</blockquote>\n<b>🌍 Change language: /lang</b>"
     # 👇 PASTE YOUR DIRECT IMAGE LINK INSIDE THE QUOTES BELOW
-    IMAGE_URL = "https://i.ibb.co/Kcj7d98M/photo-2026-01-31-22-52-56.jpg"
+    IMAGE_URL = "https://raw.github.com/alexxx9934/imglink/main/photo.jpg"
 
     TO_USE_MSG = (
         f"<b><a href='{IMAGE_URL}'>✨ 𝕬𝖈𝖈𝖊𝖘𝖘 𝕽𝖊𝖘𝖙𝖗𝖎𝖈𝖙𝖊𝖉 ✨</a></b>\n\n"
@@ -1944,11 +1944,11 @@ Use:
     HELPER_ADMIN_RIGHTS_REQUIRED_MSG = "❗️ Для работы в группе боту нужны права администратора. Пожалуйста, сделайте бота админом этой группы."
     
     # URL extractor messages
-    WELCOME_IMAGE = "https://i.ibb.co/VYpXxWwr/photo-2026-01-31-22-52-59.jpg"
+    WELCOME_IMAGE = "https://raw.github.com/alexxx9934/imglink/main/photo_2026.jpg"
 
     URL_EXTRACTOR_WELCOME_MSG = (
         f"<b><a href='{WELCOME_IMAGE}'>✨ 𝖂𝖊𝖑𝖈𝖔𝖒𝖊 𝖙𝖔 𝖙𝖍𝖊 𝕭𝖔𝖙 ✨</a></b>\n\n"
-        "👋 <b>𝐇𝐞𝐥𝐥𝐨, {{first_name}}!</b>\n\n"
+        "👋 <b>𝐇𝐞𝐥𝐥𝐨, {first_name}!</b>\n\n"
         "<i>I am your advanced <b>Video Downloader Assistant</b>. 🤖</i>\n"
         "<i>Send me any video link to save it directly to Telegram!</i> 📥\n\n"
         "﹌﹌﹌﹌﹌﹌❀˖°﹌﹌﹌﹌﹌﹌❀˖°\n"
@@ -1960,7 +1960,7 @@ Use:
         "<b>💸 𝐑𝐚𝐭𝐞:</b> <code>1⭐️ = $0.02</code></blockquote>\n\n"
         "<blockquote>⛔️ <b>𝐖𝐀𝐑𝐍𝐈𝐍𝐆</b>:\n"
         "Do not leave the channel or you will be <b>𝐁𝐀𝐍𝐍𝐄𝐃</b>.</blockquote>\n\n"
-        "{{credits}}"
+        "{credits}"
     )
     URL_EXTRACTOR_NO_FILES_TO_REMOVE_MSG = "🗑 No files to remove."
     URL_EXTRACTOR_ALL_FILES_REMOVED_MSG = "🗑 All files removed successfully!\n\nRemoved files:\n{files_list}"
