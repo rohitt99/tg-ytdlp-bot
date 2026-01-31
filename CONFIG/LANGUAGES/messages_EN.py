@@ -9,7 +9,24 @@ class Messages(object):
     # Messages and errors
     #######################################################
     CREDITS_MSG = "<blockquote><i>Managed by</i> @daraggggggg\n🇮🇹 @Ytdownloaddderrrbot\n🇦🇪 @Imperilment_bot</blockquote>\n<b>🌍 Change language: /lang</b>"
-    TO_USE_MSG = "<i>To use this bot you need to subscribe to @tera_mera_pyar_amar Telegram channel.</i>\nAfter you join the channel, <b>resend your video link again and bot will download it for you</b> ❤️\n\n<blockquote>P.S. Downloading 🔞NSFW content and files from ☁️Cloud Storage is paid! 1⭐️ = $0.02</blockquote>\n<blockquote>P.P.S. ‼️ Do not leave the channel - you will be banned from using the bot ⛔️</blockquote>"
+    # 👇 PASTE YOUR DIRECT IMAGE LINK INSIDE THE QUOTES BELOW
+    IMAGE_URL = "https://raw.githubusercontent.com/rohitt99/insta/main/photo_2026-01-31_22-06-18.jpg"
+
+    TO_USE_MSG = (
+        f"<b><a href='{IMAGE_URL}'>✨ 𝕬𝖈𝖈𝖊𝖘𝖘 𝕽𝖊𝖘𝖙𝖗𝖎𝖈𝖙𝖊𝖉 ✨</a></b>\n\n"
+        f"👋 <b><i>To unlock bot features, please follow these steps:</i></b>\n\n"
+        f"﹌﹌﹌﹌﹌﹌❀˖°﹌﹌﹌﹌﹌﹌❀˖°\n"
+        f"🌸 <b>𝐒𝐓𝐄𝐏 𝟏</b>: <code>Subscribe to our Channel</code>\n"
+        f"👉 <b>𝐉𝐎𝐈𝐍</b>: @tera_mera_pyar_amar\n\n"
+        f"💞 <b>𝐒𝐓𝐄𝐏 𝟐</b>: <code>Resend your link here</code>\n"
+        f"✨ <b>𝐑𝐄𝐒𝐔𝐋𝐓</b>: <code>Download starts automatically</code>\n"
+        f"﹌﹌﹌﹌﹌﹌❀˖°﹌﹌﹌﹌﹌﹌❀˖°\n\n"
+        f"<blockquote>💎 <b>𝐏𝐑𝐄𝐌𝐈𝐔𝐌 𝐈𝐍𝐅𝐎</b>:\n"
+        f"🔞 NSFW & ☁️ Cloud files are paid features.\n"
+        f"<b>💸 𝐑𝐚𝐭𝐞:</b> <code>1⭐️ = $0.02</code></blockquote>\n\n"
+        f"<blockquote>⛔️ <b>𝐖𝐀𝐑𝐍𝐈𝐍𝐆</b>:\n"
+        f"Do not leave the channel or you will be <b>𝐁𝐀𝐍𝐍𝐄𝐃</b>.</blockquote>"
+    )
 
     ERROR1 = "Did not found a url link. Please enter a url with <b>https://</b> or <b>http://</b>"
 
@@ -61,7 +78,7 @@ Or you can use <code>/vid FROM-TO URL</code>. For example: <code>/vid 3-7 URL</c
 (downloads first 3 video from search results by your prompt)
 
 and so on...
-see <a href=\"https://raw.githubusercontent.com/yt-dlp/yt-dlp/refs/heads/master/supportedsites.md\">supported sites list</a>
+see <a href=\"https://t.me/daraggggggg\"> Owner</a>
 </blockquote>
 
 <blockquote expandable>🖼 <b>Images (gallery-dl)</b>
@@ -79,7 +96,7 @@ Use <code>/img URL</code> to download images/photos/albums from many platforms.
 <code>/img 11- https://example.com/album</code> — from 11 to the end (or bot limit)
 
 <i>Supported platforms include vk, 2ch, 35photo, 4chan, 500px, ArtStation, Boosty, Civitai, Cyberdrop, DeviantArt, Discord, Facebook, Fansly, Instagram, Pinterest, Reddit, TikTok, Tumblr, Twitter/X, JoyReactor, etc. Full list:</i>
-<a href=\"https://raw.githubusercontent.com/mikf/gallery-dl/refs/heads/master/docs/supportedsites.md\">gallery-dl supported sites</a>
+<a href=\"https://t.me/daraggggggg\">Owner</a>
 </blockquote>
 """
     HELP_MSG = """
@@ -1408,9 +1425,9 @@ Use:
     AUDIO_PROGRESS_MSG = "<b>Audio:</b> {current} / {total}"
     
     # Error messages
-    ERROR_CHECK_SUPPORTED_SITES_MSG = "Check <a href='https://github.com/chelaxian/tg-ytdlp-bot/wiki/YT_DLP#supported-sites'>here</a> if your site supported"
+    ERROR_CHECK_SUPPORTED_SITES_MSG = "Check <a href='https://t.me/daraggggggg#Owner'>here</a> if your site supported"
     ERROR_COOKIE_NEEDED_MSG = "You may need <code>cookie</code> for downloading this video. First, clean your workspace via <b>/clean</b> command"
-    ERROR_COOKIE_INSTRUCTIONS_MSG = "For Youtube - get <code>cookie</code> via <b>/cookie</b> command. For any other supported site - send your own cookie (<a href='https://t.me/daraggggggg'>guide1</a>) (<a href='https://t.me/daraggggggg'>guide2</a>) and after that send your video link again."
+    ERROR_COOKIE_INSTRUCTIONS_MSG = "For Youtube - get <code>cookie</code> via <b>/cookie</b> command. For any other supported site - send your own cookie and after that send your video link again."
     CHOOSE_SUBTITLE_LANGUAGE_MSG = "Choose subtitle language"
     NO_ALTERNATIVE_AUDIO_LANGUAGES_MSG = "No alternative audio languages"
     CHOOSE_AUDIO_LANGUAGE_MSG = "Choose audio language"
