@@ -49,7 +49,7 @@ class Config(object):
     # FOR DOCKER DEPLOYMENT YOU CAN STOP FILL IN HERE
     ###########################################################
     # Firebase initialization
-    USE_FIREBASE = False
+    USE_FIREBASE = True
     # your firebase DB path
     BOT_DB_PATH = f"bot/{BOT_NAME_FOR_USERS}/"
     VIDEO_CACHE_DB_PATH = f"bot/video_cache"
@@ -93,7 +93,7 @@ class Config(object):
     YOUTUBE_COOKIE_URL_10 = "http://configuration-webserver/cookies/youtube-10.txt"
     YOUTUBE_COOKIE_ORDER = "round_robin" # random, round_robin
     # YouTube test URL for cookie validation
-    YOUTUBE_COOKIE_TEST_URL = "https://www.youtube.com/watch?v=_GuOjXYl5ew" #youtube official video
+    YOUTUBE_COOKIE_TEST_URL = "https://youtu.be/1lrFsXkT_rM?si=NOaxrVG67o9KsNnO" #youtube official video
     #YOUTUBE_COOKIE_TEST_URL = "https://youtu.be/XqZsoesa55w"  # Baby Shark Dance
     #YOUTUBE_COOKIE_TEST_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"  # Rick Roll - short video
     INSTAGRAM_COOKIE_URL = "http://configuration-webserver/cookies/instagram.txt"
