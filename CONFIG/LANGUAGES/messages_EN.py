@@ -167,8 +167,6 @@ Use <code>/img URL</code> to download images/photos/albums from many platforms.
 • <code>/img 11-20 URL</code> → download specific range
 • <code>/img 11- URL</code> → download from 11th to the end
 
-👨‍💻 <i>Developer:</i> @daraggggggg
-🤝 <i>Contributor:</i> @daraggggggg
 </blockquote>
     """
     
