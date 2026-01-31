@@ -8,9 +8,9 @@ class Messages(object):
     #######################################################
     # Messages and errors
     #######################################################
-    CREDITS_MSG = "<blockquote><i>Managed by</i> @daraggggggg\n🇮🇹 @Ytdownloaddderrrbot\n🇦🇪 @Imperilment_bot</blockquote>\n<b>🌍 Change language: /lang</b>"
+    CREDITS_MSG = "<blockquote><i>Managed by</i> @daraggggggg\n @Ytdownloaddderrrbot\n @Imperilment_bot</blockquote>\n<b>🌍 Change language: /lang</b>"
     # 👇 PASTE YOUR DIRECT IMAGE LINK INSIDE THE QUOTES BELOW
-    IMAGE_URL = "https://raw.githubusercontent.com/rohitt99/insta/main/photo_2026-01-31_22-06-18.jpg"
+    IMAGE_URL = "https://i.ibb.co/Kcj7d98M/photo-2026-01-31-22-52-56.jpg"
 
     TO_USE_MSG = (
         f"<b><a href='{IMAGE_URL}'>✨ 𝕬𝖈𝖈𝖊𝖘𝖘 𝕽𝖊𝖘𝖙𝖗𝖎𝖈𝖙𝖊𝖉 ✨</a></b>\n\n"
@@ -1944,7 +1944,24 @@ Use:
     HELPER_ADMIN_RIGHTS_REQUIRED_MSG = "❗️ Для работы в группе боту нужны права администратора. Пожалуйста, сделайте бота админом этой группы."
     
     # URL extractor messages
-    URL_EXTRACTOR_WELCOME_MSG = "Hello {first_name},\n \n<i>This bot🤖 can download any videos into telegram directly.😊 For more information press <b>/help</b></i> 👈\n\n<blockquote>P.S. Downloading 🔞NSFW content and files from ☁️Cloud Storage is paid! 1⭐️ = $0.02</blockquote>\n<blockquote>P.P.S. ‼️ Do not leave the channel - you will be banned from using the bot ⛔️</blockquote>\n \n {credits}"
+    WELCOME_IMAGE = "https://i.ibb.co/VYpXxWwr/photo-2026-01-31-22-52-59.jpg"
+
+    URL_EXTRACTOR_WELCOME_MSG = (
+        f"<b><a href='{WELCOME_IMAGE}'>✨ 𝖂𝖊𝖑𝖈𝖔𝖒𝖊 𝖙𝖔 𝖙𝖍𝖊 𝕭𝖔𝖙 ✨</a></b>\n\n"
+        "👋 <b>𝐇𝐞𝐥𝐥𝐨, {{first_name}}!</b>\n\n"
+        "<i>I am your advanced <b>Video Downloader Assistant</b>. 🤖</i>\n"
+        "<i>Send me any video link to save it directly to Telegram!</i> 📥\n\n"
+        "﹌﹌﹌﹌﹌﹌❀˖°﹌﹌﹌﹌﹌﹌❀˖°\n"
+        "🦋 <b>𝐇𝐎𝐖 𝐓𝐎 𝐔𝐒𝐄</b>:\n"
+        "Simply send a link or press <b>/help</b> for more info.\n"
+        "﹌﹌﹌﹌﹌﹌❀˖°﹌﹌﹌﹌﹌﹌❀˖°\n\n"
+        "<blockquote>💎 <b>𝐏𝐑𝐄𝐌𝐈𝐔𝐌 𝐈𝐍𝐅𝐎</b>:\n"
+        "🔞 NSFW & ☁️ Cloud files are paid features.\n"
+        "<b>💸 𝐑𝐚𝐭𝐞:</b> <code>1⭐️ = $0.02</code></blockquote>\n\n"
+        "<blockquote>⛔️ <b>𝐖𝐀𝐑𝐍𝐈𝐍𝐆</b>:\n"
+        "Do not leave the channel or you will be <b>𝐁𝐀𝐍𝐍𝐄𝐃</b>.</blockquote>\n\n"
+        "{{credits}}"
+    )
     URL_EXTRACTOR_NO_FILES_TO_REMOVE_MSG = "🗑 No files to remove."
     URL_EXTRACTOR_ALL_FILES_REMOVED_MSG = "🗑 All files removed successfully!\n\nRemoved files:\n{files_list}"
     
@@ -2093,8 +2110,8 @@ Use:
     
     # Settings Command Messages
     SETTINGS_LANGUAGE_BUTTON_MSG = "🌍 LANGUAGE"
-    SETTINGS_DEV_GITHUB_BUTTON_MSG = "🛠 Dev GitHub"
-    SETTINGS_CONTR_GITHUB_BUTTON_MSG = "🛠 Contr GitHub"
+    SETTINGS_DEV_GITHUB_BUTTON_MSG = "👑 𝕺𝖜𝖓𝖊𝖗"
+    SETTINGS_CONTR_GITHUB_BUTTON_MSG = "🎀 𝕮𝖔𝖓𝖙𝖗𝖎𝖇𝖚𝖙𝖔𝖗"
     SETTINGS_CLEAN_BUTTON_MSG = "🧹 CLEAN"
     SETTINGS_COOKIES_BUTTON_MSG = "🍪 COOKIES"
     SETTINGS_MEDIA_BUTTON_MSG = "🎞 MEDIA"
