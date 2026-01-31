@@ -17,10 +17,7 @@ class LanguageRouter:
     def __init__(self):
         self.languages_dir = os.path.dirname(os.path.abspath(__file__))
         self.available_languages = {
-            'en': 'messages_EN.py',
-            'ru': 'messages_RU.py', 
-            'ar': 'messages_AR.py',
-            'in': 'messages_IN.py'
+            'en': 'messages_EN.py'
         }
         self.default_language = 'en'
         self._cached_messages = {}
